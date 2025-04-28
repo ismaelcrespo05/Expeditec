@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expeditec - Panel Administrativo</title>
+    
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/img/icono.png" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/img/icono.png" type="image/x-icon">
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Transitions */
+        .transition-all {
+            transition-property: all;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 200ms;
+        }
+
+        /* Dark mode transitions */
+        .dark .dark\:bg-gray-800 {
+            background-color: rgb(31, 41, 55);
+        }
+
+        .dark .dark\:text-white {
+            color: rgb(255, 255, 255);
+        }
+
+        /* Sidebar transition */
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Modal backdrop */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4a5568;
+        }
+
+        /* Loading animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <!-- Notificación de error flotante (Django Template) -->
+        {% if Error %}
+            <div id="errorNotification" class="fixed top-4 right-4 z-50 max-w-xs w-full">
+                <div class="notification bg-red-100 border-l-4 border-red-500 text-red-700 rounded-lg shadow-lg flex items-start overflow-hidden">
+                    <div class="flex-shrink-0 p-4">
+                        <img src="https://api.iconify.design/lucide:alert-circle.svg?color=red" class="h-6 w-6" alt="Error" />
+                    </div>
+                    <div class="flex flex-col flex-1 min-w-0 py-3 pr-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-medium">Error</h3>
+                            <button onclick="hideNotification()" class="ml-2 -mx-1.5 -my-1.5 bg-red-100 text-red-500 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-200 inline-flex h-8 w-8">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="mt-1 text-sm overflow-y-auto max-h-40 pr-1">
+                            <p id="notificationMessage" class="break-words">{{ Error }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                // Funciones para controlar la notificación
+                function hideNotification() {
+                    const notification = document.getElementById('errorNotification');
+                    const notificationContent = notification.querySelector('.notification');
+                    
+                    notificationContent.classList.add('hide');
+                    
+                    setTimeout(() => {
+                        notification.remove(); // Elimina completamente la notificación del DOM
+                    }, 300);
+                }
+
+                // Auto-ocultar después de 5 segundos
+                setTimeout(() => {
+                    if (document.getElementById('errorNotification')) {
+                        hideNotification();
+                    }
+                }, 30000);
+            </script>
+
+            <style>
+                /* Animaciones para la notificación */
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+                .notification {
+                    animation: slideIn 0.3s ease-out forwards;
+                }
+                .notification.hide {
+                    animation: slideOut 0.3s ease-in forwards;
+                }
+                
+                /* Estilos para el scroll */
+                .overflow-y-auto::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .overflow-y-auto::-webkit-scrollbar-thumb {
+                    background-color: rgba(239, 68, 68, 0.5);
+                    border-radius: 2px;
+                }
+                .overflow-y-auto::-webkit-scrollbar-track {
+                    background-color: rgba(239, 68, 68, 0.1);
+                }
+            </style>
+        {% endif %}
+
+        <!-- Notificación de éxito flotante (Django Template) -->
+        {% if Success %}
+            <div id="successNotification" class="fixed top-4 right-4 z-50 max-w-xs w-full">
+                <div class="notification bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg flex items-start">
+                    <div class="flex-shrink-0">
+                        <img src="https://api.iconify.design/lucide:check-circle-2.svg?color=green" class="h-6 w-6" alt="Éxito" />
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium">Éxito</h3>
+                        <div class="mt-1 text-sm">
+                            <p id="successMessage">{{ Success }}</p>
+                        </div>
+                    </div>
+                    <button onclick="hideSuccessNotification()" class="ml-auto -mx-1.5 -my-1.5 bg-green-50 text-green-500 rounded-lg focus:ring-2 focus:ring-green-400 p-1.5 hover:bg-green-100 inline-flex h-8 w-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <script>
+                // Funciones para la notificación de éxito
+                function hideSuccessNotification() {
+                    const notification = document.getElementById('successNotification');
+                    const notificationContent = notification.querySelector('.notification');
+                    
+                    notificationContent.classList.add('hide');
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 300);
+                }
+
+                // Auto-ocultar después de 5 segundos
+                setTimeout(() => {
+                    if (document.getElementById('successNotification')) {
+                        hideSuccessNotification();
+                    }
+                }, 30000);
+            </script>
+
+            <style>
+                /* Animaciones (compartidas con la notificación de error) */
+                .notification {
+                    animation: slideIn 0.3s ease-out forwards;
+                }
+                .notification.hide {
+                    animation: slideOut 0.3s ease-in forwards;
+                }
+            </style>
+        {% endif %}
+
+        <div class="h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+            <header class="sticky top-0 z-30 flex h-16 items-center justify-between bg-white dark:bg-gray-800 px-4 shadow-sm transition-colors duration-200">
+                <div class="flex items-center">
+                    <button id="sidebar-toggle" class="mr-4 rounded-md p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 lg:hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-left-open-icon lucide-panel-left-open"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>
+                    </button>
+                </div>
+
+                <!-- Barra de búsqueda añadida aquí -->
+                <div class="flex items-center flex-1 max-w-md mx-4">
+                    <div class="relative w-full">
+                        <form action="{% url 'busqueda_personal' %}" method="POST">
+                            {% csrf_token %}
+                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 dark:text-gray-400">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="m21 21-4.3-4.3"/>
+                                </svg>
+                            </div>
+                       
+                            <input 
+                                type="text" 
+                                id="search-personal" 
+                                name="buscar"
+                                class="block w-full py-2 pl-10 pr-4 text-sm bg-gray-100 border border-transparent rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white" 
+                                placeholder="Buscar personal..." 
+                                autocomplete="off"
+                            >
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                                <button type="button" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 6 6 18"/>
+                                        <path d="m6 6 12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="theme-toggle" class="p-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Cambiar tema">
+                        <span id="theme-icon" class="w-5 h-5 text-slate-700 dark:text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun-icon lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                        </span>
+                    </button>
+                    <div class="relative ml-3">
+                        <button class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-icon lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </div>
+                            <span class="ml-2 hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{request.user}}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            <div class="flex flex-1 overflow-hidden">
+                <aside id="sidebar" class="fixed top-0 left-0 z-50 h-full w-64 transform bg-gray-900 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:z-30 -translate-x-full">
+                    <div class="flex h-16 items-center justify-between border-b border-gray-800 px-4">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-md bg-blue-500 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-icon lucide-book"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>
+                            </div>
+                            <span class="ml-2 text-xl font-bold">EXPEDITEC</span>
+                        </div>
+                        <button id="sidebar-close" class="rounded-md p-1 text-gray-400 hover:bg-gray-800 hover:text-white lg:hidden">
+                            ✕
+                        </button>
+                    </div>
+
+                    <nav class="mt-6 px-4">
+                        <ul class="space-y-2">
+                            
+                            {% block sidebar %}
+                                
+                            {% endblock sidebar %}
+                        </ul>
+                    </nav>
+
+                    <div class="absolute bottom-0 left-0 right-0 border-t border-gray-800 p-4">
+                        <a href="{% url 'logout' %}">
+                            <button class="flex w-full items-center rounded-md px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out-icon lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                                <span class="ml-3">Cerrar sesión</span>
+                            </button>
+                        </a>
+                    </div>
+                </aside>
+                <main class="flex-1 overflow-auto p-4 lg:p-6 transition-all duration-300 lg:ml-64">
+                    {% block contenido %}
+                        
+                    {% endblock contenido %}
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para actualizar la fecha actual
+        function updateCurrentDate() {
+            const currentDate = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = currentDate.toLocaleDateString('es-ES', options);
+        }
+        
+        // Función para manejar el tema oscuro/claro
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const html = document.documentElement;
+            
+            // Verificar preferencia guardada o del sistema
+            const savedTheme = localStorage.getItem('theme');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                html.classList.add('dark');
+                themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+            } else {
+                html.classList.remove('dark');
+                themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`;
+            }
+            
+            themeToggle.addEventListener('click', () => {
+                html.classList.toggle('dark');
+                const isDark = html.classList.contains('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                
+                if (isDark) {
+                    themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
+                } else {
+                    themeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`;
+                }
+                
+                // Actualizar gráficos cuando cambia el tema
+                updateChartsTheme();
+            });
+        }
+
+        // Función para manejar el sidebar móvil
+        function setupSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarClose = document.getElementById('sidebar-close');
+            
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+            });
+            
+            sidebarClose.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+            });
+        }
+
+        // Función para manejar la búsqueda
+        function setupSearch() {
+            const searchInput = document.getElementById('search-personal');
+            const clearButton = searchInput.nextElementSibling.querySelector('button');
+            const clearButtonContainer = clearButton.parentElement;
+
+            searchInput.addEventListener('input', (e) => {
+                if (e.target.value) {
+                    clearButtonContainer.classList.remove('hidden');
+                } else {
+                    clearButtonContainer.classList.add('hidden');
+                }
+            });
+
+            clearButton.addEventListener('click', () => {
+                searchInput.value = '';
+                clearButtonContainer.classList.add('hidden');
+                searchInput.focus();
+            });
+        }
+
+        // Inicializar todo cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            setupThemeToggle();
+            setupSidebar();
+            setupSearch();
+            updateCurrentDate();
+            initCharts();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+django
+django_session_timeout
+ua-parser 
+user-agents
+django-user-agents 
+pyyaml 
+regex
