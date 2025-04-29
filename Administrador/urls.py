@@ -6,4 +6,5 @@ urlpatterns = [
     path('personal/',views.Personal.as_view(),name='personal'),
     path('nuevo_personal/',views.Nuevo_Personal.as_view(),name='nuevo_personal'),
     path('busqueda/',views.Busqueda_Personal.as_view(),name='busqueda_personal'),
+    path('registro_personal_csv/',views.Personal_CSV.as_view(),name='personal_csv')
 ]

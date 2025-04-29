@@ -9,6 +9,7 @@ from django.utils.html import escape
 from . import models as Admin_models
 from django.utils import timezone
 from datetime import datetime
+import pandas as pd
 
 import regex
 from . import utils
@@ -48,6 +49,49 @@ class Personal(View):
 
 
 class Nuevo_Personal(View):
+    @staticmethod
+    def registrar(datos):
+        userid = User(username=datos['username'],email=datos['email'])
+        password = utils.generar_contraseña()
+        userid.set_password(password)
+        userid.save()
+        # Crear y guardar el aspirante
+        aspirante = Admin_models.Aspirante(
+            userid = userid,
+            tipo=datos['tipo'],  # o 'estudiante' según corresponda
+            nombres=datos['nombres'],
+            primer_apellido=datos['primer_apellido'],
+            segundo_apellido=datos.get('segundo_apellido'),
+            sexo=datos['sexo'],
+            ci=datos['ci'],
+            lugar_nacimiento=datos['lugar_nacimiento'],
+            color_piel=datos['color_piel'],
+            estado_civil=datos['estado_civil'],
+            ciudadano=datos['ciudadano'],
+            procedencia_social=datos['procedencia_social'],
+            especialidad=datos['especialidad'],
+            pais=datos['pais'],
+            centro=datos['centro'],
+            cargo=datos['cargo'],
+            facultad=datos['facultad'],
+            ces=datos['ces'],
+            departamento=datos['departamento'],
+            salario=datos['salario'],
+            categoria_docente=datos.get('categoria_docente'),
+            direccion=datos['direccion'],
+            grado_cientifico=datos.get('grado_cientifico'),
+            telefono=datos['telefono'],
+            solapin=datos['solapin']
+        )
+        fecha_cat = datos.get('fecha_otorgamiento_categoria')
+        fecha_grado = datos.get('fecha_otorgamiento_grado')
+        if fecha_cat:
+            aspirante.fecha_otorgamiento_categoria = timezone.datetime.strptime(fecha_cat, '%Y-%m-%d').date()
+        if fecha_grado:
+            aspirante.fecha_otorgamiento_grado = timezone.datetime.strptime(fecha_grado, '%Y-%m-%d').date()
+        aspirante.save()
+
+
     def get(self, request):
         return Personal.Notificacion(request=request)
     
@@ -58,52 +102,11 @@ class Nuevo_Personal(View):
                 if campo != 'csrfmiddlewaretoken'}
         
         # Convertir fechas de string a date
-        fecha_cat = datos.get('fecha_otorgamiento_categoria')
-        fecha_grado = datos.get('fecha_otorgamiento_grado')
         validacion = Nuevo_Personal.validar_datos_aspirante(datos=datos)
         if validacion != 'OK':
             return Personal.Notificacion(request=request, Error=validacion, back=request.POST)
         try:
-            userid = User(username=datos['username'],email=datos['email'])
-            password = utils.generar_contraseña()
-            userid.set_password(password)
-            userid.save()
-            # Crear y guardar el aspirante
-            aspirante = Admin_models.Aspirante(
-                userid = userid,
-                tipo=datos['tipo'],  # o 'estudiante' según corresponda
-                nombres=datos['nombres'],
-                primer_apellido=datos['primer_apellido'],
-                segundo_apellido=datos.get('segundo_apellido'),
-                sexo=datos['sexo'],
-                ci=datos['ci'],
-                lugar_nacimiento=datos['lugar_nacimiento'],
-                color_piel=datos['color_piel'],
-                estado_civil=datos['estado_civil'],
-                ciudadano=datos['ciudadano'],
-                procedencia_social=datos['procedencia_social'],
-                especialidad=datos['especialidad'],
-                pais=datos['pais'],
-                centro=datos['centro'],
-                cargo=datos['cargo'],
-                facultad=datos['facultad'],
-                ces=datos['ces'],
-                departamento=datos['departamento'],
-                salario=datos['salario'],
-                categoria_docente=datos.get('categoria_docente'),
-                direccion=datos['direccion'],
-                grado_cientifico=datos.get('grado_cientifico'),
-                telefono=datos['telefono'],
-                solapin=datos['solapin']
-            )
-            
-            if fecha_cat:
-                aspirante.fecha_otorgamiento_categoria = timezone.datetime.strptime(fecha_cat, '%Y-%m-%d').date()
-            if fecha_grado:
-                aspirante.fecha_otorgamiento_grado = timezone.datetime.strptime(fecha_grado, '%Y-%m-%d').date()
-            
-            aspirante.save()
-            
+            Nuevo_Personal.registrar(datos=datos)
             return Personal.Notificacion(request=request, Success="Aspirante registrado exitosamente")
         except Exception as e:
             print(e)
@@ -252,6 +255,135 @@ class Nuevo_Personal(View):
 
 
 
+
+
+
+
+class Personal_CSV(View):
+    def get(self,request):
+        return Personal.Notificacion(request=request)
+    
+    def post(self, request: HttpRequest):
+        if request.user.is_authenticated and request.user.is_staff:
+            # Verificar si se envió un archivo
+            if 'csv_file' not in request.FILES:
+                return Personal.Notificacion(request=request, Error='No se encontró archivo CSV')
+            
+            csv_file = request.FILES['csv_file']
+            
+            # Validar extensión del archivo
+            if not csv_file.name.endswith('.csv'):
+                return Personal.Notificacion(request=request, Error='El archivo debe ser un CSV')
+            
+            try:
+                # Leer el archivo CSV con pandas
+                df = pd.read_csv(csv_file)
+                
+                # Convertir todas las columnas a string
+                df = df.astype(str)
+                
+                # Verificar que existe la columna CI
+                if 'ci' not in df.columns:
+                    return Personal.Notificacion(request=request, Error='El CSV debe contener una columna "ci"')
+                
+                # Obtener lista de CIs válidos del CSV (ya son strings)
+                cis_en_csv = df['ci'].replace('nan', '').replace('None', '').str.strip().unique().tolist()
+                cis_en_csv = [ci for ci in cis_en_csv if ci]  # Eliminar strings vacíos
+                
+                # Contadores para resultados
+                registros_actualizados = 0
+                registros_creados = 0
+                registros_con_error = 0
+                errores_detallados = []
+                
+                # Procesar cada fila del CSV
+                for index, row in df.iterrows():
+                    try:
+                        row_dict = row.to_dict()
+                        ci = row_dict.get('ci', '').strip()
+                        
+                        if not ci:
+                            registros_con_error += 1
+                            errores_detallados.append(f"Fila {index+1}: CI vacío/inválido")
+                            continue
+                            
+                        if Admin_models.Aspirante.objects.filter(ci=ci).exists():
+                            asp_old = Admin_models.Aspirante.objects.get(ci=ci)
+                            validacion = Nuevo_Personal.validar_datos_aspirante(datos=row_dict, update=asp_old)
+                            if validacion == 'OK':
+                                # Actualizar campos (todos convertidos a string)
+                                asp_old.tipo = row_dict.get('tipo', '')
+                                asp_old.nombres = row_dict.get('nombres', '')
+                                asp_old.primer_apellido = row_dict.get('primer_apellido', '')
+                                asp_old.segundo_apellido = row_dict.get('segundo_apellido', '')
+                                asp_old.sexo = row_dict.get('sexo', '')
+                                asp_old.lugar_nacimiento = row_dict.get('lugar_nacimiento', '')
+                                asp_old.color_piel = row_dict.get('color_piel', '')
+                                asp_old.estado_civil = row_dict.get('estado_civil', '')
+                                asp_old.ciudadano = row_dict.get('ciudadano', '')
+                                asp_old.procedencia_social = row_dict.get('procedencia_social', '')
+                                asp_old.especialidad = row_dict.get('especialidad', '')
+                                asp_old.pais = row_dict.get('pais', '')
+                                asp_old.cargo = row_dict.get('cargo', '')
+                                asp_old.facultad = row_dict.get('facultad', '')
+                                asp_old.ces = row_dict.get('ces', '')
+                                asp_old.departamento = row_dict.get('departamento', '')
+                                asp_old.salario = row_dict.get('salario', '')
+                                asp_old.categoria_docente = row_dict.get('categoria_docente', '')
+                                asp_old.fecha_otorgamiento_categoria = row_dict.get('fecha_otorgamiento_categoria', '')
+                                asp_old.direccion = row_dict.get('direccion', '')
+                                asp_old.grado_cientifico = row_dict.get('grado_cientifico', '')
+                                asp_old.fecha_otorgamiento_grado = row_dict.get('fecha_otorgamiento_grado', '')
+                                asp_old.telefono = row_dict.get('telefono', '')
+                                asp_old.solapin = row_dict.get('solapin', '')
+                                asp_old.save()
+                                registros_actualizados += 1
+                            else:
+                                registros_con_error += 1
+                                errores_detallados.append(f"Fila {index+1}: {validacion}")
+                        else:
+                            nuevo_aspirante = Nuevo_Personal.registrar(datos=row_dict)
+                            if nuevo_aspirante:
+                                registros_creados += 1
+                            else:
+                                registros_con_error += 1
+                                errores_detallados.append(f"Fila {index+1}: Error al crear registro")
+                                
+                    except Exception as e:
+                        registros_con_error += 1
+                        errores_detallados.append(f"Fila {index+1}: Error - {str(e)}")
+                
+                # Eliminar aspirantes que NO están en el CSV
+                aspirantes_a_eliminar = Admin_models.Aspirante.objects.exclude(ci__in=cis_en_csv)
+                cantidad_eliminados = aspirantes_a_eliminar.count()
+                aspirantes_a_eliminar.delete()
+                
+                # Construir mensaje en un solo string
+                mensaje = (
+                    f"Proceso completado. "
+                    f"Actualizados: {registros_actualizados}, "
+                    f"Creados: {registros_creados}, "
+                    f"Eliminados: {cantidad_eliminados}, "
+                    f"Errores: {registros_con_error}"
+                )
+                
+                # Agregar detalles de errores si existen
+                if errores_detallados:
+                    mensaje += ". Errores: " + ", ".join(errores_detallados[:5])  # Mostrar primeros 5 errores
+                
+                return Personal.Notificacion(
+                    request=request,
+                    Success=mensaje
+                )
+            
+            except pd.errors.EmptyDataError:
+                return Personal.Notificacion(request=request, Error='El archivo CSV está vacío')
+            except pd.errors.ParserError:
+                return Personal.Notificacion(request=request, Error='Error al leer el archivo CSV')
+            except Exception as e:
+                return Personal.Notificacion(request=request, Error=f'Error inesperado: {str(e)}')
+        else:
+            return Login_views.redirigir_usuario(request)    
 
 
 class Busqueda_Personal(View):
