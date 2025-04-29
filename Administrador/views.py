@@ -118,8 +118,8 @@ class Nuevo_Personal(View):
             'campos_obligatorios': [
                 'tipo', 'nombres', 'primer_apellido', 'segundo_apellido', 'sexo', 'ci',
                 'lugar_nacimiento', 'color_piel', 'estado_civil', 'ciudadano',
-                'procedencia_social', 'especialidad', 'pais', 'centro', 'cargo',
-                'facultad', 'ces', 'departamento', 'salario', 'categoria_docente',
+                'procedencia_social', 'pais',
+                'facultad', 'salario', 'categoria_docente',
                 'grado_cientifico', 'direccion', 'telefono', 'solapin', 'username', 'email'
             ],
             'opciones_validas': {
@@ -250,6 +250,10 @@ class Nuevo_Personal(View):
         return 'OK' if not errores else ', '.join(errores)+"."
 
 
+
+
+
+
 class Busqueda_Personal(View):
     def get(self,request:HttpRequest):
         return Login_views.redirigir_usuario(request=request)
@@ -282,6 +286,7 @@ class Busqueda_Personal(View):
                 })
             else:
                 # Si no hay término de búsqueda, mostrar todos ordenados
+                print( Admin_models.Aspirante.objects.all().order_by('nombres', 'primer_apellido'))
                 return render(request, 'Admin/lista_personal.html', {
                     'aspirantes': Admin_models.Aspirante.objects.all().order_by('nombres', 'primer_apellido'),
                     'termino_busqueda': '',
