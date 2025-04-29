@@ -5,3 +5,4 @@ user-agents
 django-user-agents 
 pyyaml 
 regex
+pandas
