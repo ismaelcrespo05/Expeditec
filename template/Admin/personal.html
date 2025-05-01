@@ -226,8 +226,7 @@
         </div>
 
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-            <form class="space-y-6" enctype="multipart/form-data"
-                action="{% url 'personal_csv' %}" method="POST">
+            <form id="csvForm" class="space-y-6" enctype="multipart/form-data" action="{% url 'personal_csv' %}" method="POST">
                 {% csrf_token %}
                 <div class="flex items-center justify-center w-full">
                     <label for="csv_file" class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
@@ -242,16 +241,15 @@
                                 Solo archivos CSV.
                             </p>
                         </div>
-                        <input id="csv_file" name="csv_file" type="file" class="hidden" accept=".csv" />
+                        <input required id="csv_file" name="csv_file" type="file" class="hidden" accept=".csv" />
                     </label>
                 </div>
-
-                
+            
                 <div class="flex justify-end space-x-3 pt-4">
                     <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         Cancelar
                     </button>
-                    <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <button id="submitBtn" type="button" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                         <div class="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -261,6 +259,42 @@
                     </button>
                 </div>
             </form>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    const submitBtn = document.getElementById('submitBtn');
+                    const csvForm = document.getElementById('csvForm');
+                    
+                    submitBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // Validar que se haya seleccionado un archivo
+                        const fileInput = document.getElementById('csv_file');
+                        if (!fileInput.files.length) {
+                            alert('Por favor, selecciona un archivo CSV');
+                            return;
+                        }
+                        
+                        // Mostrar el loading
+                        loadingOverlay.classList.remove('hidden');
+                        
+                        // Deshabilitar el botón para evitar múltiples submits
+                        submitBtn.disabled = true;
+                        
+                        // Esperar un breve momento para que se muestre el loading
+                        setTimeout(() => {
+                            csvForm.submit();
+                        }, 300);
+                    });
+                    
+                    // Opcional: Manejar el cierre del loading si hay un error
+                    //window.addEventListener('beforeunload', function() {
+                    //    loadingOverlay.classList.add('hidden');
+                    //});
+                });
+            </script>
+
         </div>
     </div>
 </div>

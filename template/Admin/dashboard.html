@@ -20,7 +20,7 @@
                 <div class="flex items-start justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Personal</p>
-                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">254</h3>
+                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{total_personal}}</h3>
                     </div>
                     <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-icon lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -42,7 +42,7 @@
                 <div class="flex items-start justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Cantidad de Profesores</p>
-                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">879</h3>
+                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{cant_profesores}}</h3>
                     </div>
                     <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-user-round-icon lucide-circle-user-round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>
@@ -53,7 +53,7 @@
                 <div class="flex items-start justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Cantidad de Estudiantes</p>
-                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">10032</h3>
+                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{cant_estudiantes}}</h3>
                     </div>
                     <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap-icon lucide-graduation-cap"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
@@ -93,7 +93,14 @@
                 grid: '#e5e7eb',
                 bar: '#3b82f6',
                 barHover: '#2563eb',
-                pie: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                pie: ['#FF0000', // Rojo intenso
+                    '#00FF00', // Verde brillante
+                    '#0000FF', // Azul puro
+                    '#FFFF00', // Amarillo
+                    '#FF00FF', // Magenta
+                    '#00FFFF', // Cian
+                    '#006F47'  // Verde militar
+                ]
             };
 
             // Colores para modo oscuro
@@ -103,7 +110,15 @@
                 grid: '#4b5563',
                 bar: '#60a5fa',
                 barHover: '#3b82f6',
-                pie: ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa']
+                pie: [
+                    '#FF0000', // Rojo intenso
+                    '#00FF00', // Verde brillante
+                    '#0000FF', // Azul puro
+                    '#FFFF00', // Amarillo
+                    '#FF00FF', // Magenta
+                    '#00FFFF', // Cian
+                    '#006F47'  // Verde militar
+                ]
             };
 
             // Obtener colores según el tema actual
@@ -116,12 +131,18 @@
             const barChart = new Chart(barCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['ATD Medio Superior', 
-                    'ATD Superior', 'Instructor', 'Profesor Asistente', 'Profesor Auxiliar', 'Profesor Titular', 
-                    'Profesor Consultante', 'Profesor Invitado', 'Profesor Emérito'],
+                    labels: [
+                        {% for categoria, cantidad in cantidad_x_categoria.items %}
+                            "{{ categoria }}"{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    ],
                     datasets: [{
-                        label: 'Evaluaciones',
-                        data: [120, 190, 150, 200, 180, 210, 190, 230, 210],
+                        label: 'Usuarios',
+                        data: [
+                            {% for categoria, cantidad in cantidad_x_categoria.items %}
+                                {{ cantidad }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        ],
                         backgroundColor: getColors().bar,
                         hoverBackgroundColor: getColors().barHover,
                         borderWidth: 0,
@@ -163,15 +184,31 @@
                 }
             });
 
-            // Gráfico de pastel - Rendimiento por departamento
+
             const pieCtx = document.getElementById('pie-chart').getContext('2d');
             const pieChart = new Chart(pieCtx, {
                 type: 'pie',
                 data: {
-                    labels: ['ATD Medio Superior', 'ATD Superior', 'Instructor', 'Profesor Asistente', 'Profesor Auxiliar', 'Profesor Titular', 'Profesor Consultante', 'Profesor Invitado', 'Profesor Emérito'],
+                    labels: [
+                        {% for categoria, cantidad in distribucion_x_categoria.items %}
+                            "{{ categoria }}"{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    ],
                     datasets: [{
-                        data: [35, 25, 20, 10, 2, 2, 2, 3, 1],
-                        backgroundColor: getColors().pie,
+                        data: [
+                            {% for categoria, cantidad in distribucion_x_categoria.items %}
+                                {{ cantidad }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        ],
+                        backgroundColor: [
+                            '#FF0000', // Rojo intenso
+                            '#00FF00', // Verde brillante
+                            '#0000FF', // Azul puro
+                            '#FFFF00', // Amarillo
+                            '#FF00FF', // Magenta
+                            '#00FFFF', // Cian
+                            '#006F47'  // Verde militar
+                        ],
                         borderWidth: 0
                     }]
                 },
@@ -198,7 +235,6 @@
                     }
                 }
             });
-
             // Función para actualizar los temas de los gráficos
             window.updateChartsTheme = function() {
                 const colors = getColors();
