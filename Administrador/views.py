@@ -12,19 +12,40 @@ from datetime import datetime
 import pandas as pd
 
 import regex
+import re
 from . import utils
 
+
 # Create your views here.
+
 
 class Dashboard(View):
     def get(self,request:HttpRequest):
         if request.user.is_authenticated:
+            cant_profesores = Admin_models.Aspirante.objects.filter(tipo='Profesor').count()
+            cant_estudiantes = Admin_models.Aspirante.objects.filter(tipo='Estudiante').count()
+            cantidad_x_categoria = utils.contar_por_categoria_docente()
+            total_usuarios = cant_estudiantes + cant_profesores
+            distribucion_x_categoria = {}
+            for categoria, cantidad in cantidad_x_categoria.items():
+                distribucion_x_categoria[categoria] = round((cantidad / total_usuarios) * 100, 2) if total_usuarios != 0 else 0
             return render(request,'Admin/dashboard.html',{
-                'Dashboard':True,
+                'Dashboard':True,'cant_profesores':cant_profesores,'cant_estudiantes':cant_estudiantes,
+                'total_personal':total_usuarios,'cantidad_x_categoria':cantidad_x_categoria,
+                'distribucion_x_categoria':distribucion_x_categoria
             })
         else:
             return Login_views.redirigir_usuario(request)
 
+
+
+
+
+
+
+
+
+###########################################################################################################
 
 
 class Personal(View):
@@ -51,14 +72,30 @@ class Personal(View):
 class Nuevo_Personal(View):
     @staticmethod
     def registrar(datos):
-        userid = User(username=datos['username'],email=datos['email'])
+        def parse_fecha(fecha_str):
+            if fecha_str is None:
+                return None
+            try:
+                # Convertir a string y limpiar
+                str_date = str(fecha_str).strip().lower()
+                # Verificar valores nulos comunes
+                if str_date in ['', 'nan', 'none', 'null', 'na']:
+                    return None
+                # Parsear la fecha
+                return datetime.strptime(str_date, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                return None
+
+        # Creación del usuario
+        userid = User(username=datos['username'], email=datos['email'])
         password = utils.generar_contraseña()
         userid.set_password(password)
         userid.save()
+        
         # Crear y guardar el aspirante
         aspirante = Admin_models.Aspirante(
-            userid = userid,
-            tipo=datos['tipo'],  # o 'estudiante' según corresponda
+            userid=userid,
+            tipo=datos['tipo'],
             nombres=datos['nombres'],
             primer_apellido=datos['primer_apellido'],
             segundo_apellido=datos.get('segundo_apellido'),
@@ -81,16 +118,14 @@ class Nuevo_Personal(View):
             direccion=datos['direccion'],
             grado_cientifico=datos.get('grado_cientifico'),
             telefono=datos['telefono'],
-            solapin=datos['solapin']
+            solapin=datos['solapin'],
+            # Parseamos las fechas directamente en el constructor
+            fecha_otorgamiento_categoria=parse_fecha(datos.get('fecha_otorgamiento_categoria')),
+            fecha_otorgamiento_grado=parse_fecha(datos.get('fecha_otorgamiento_grado'))
         )
-        fecha_cat = datos.get('fecha_otorgamiento_categoria')
-        fecha_grado = datos.get('fecha_otorgamiento_grado')
-        if fecha_cat:
-            aspirante.fecha_otorgamiento_categoria = timezone.datetime.strptime(fecha_cat, '%Y-%m-%d').date()
-        if fecha_grado:
-            aspirante.fecha_otorgamiento_grado = timezone.datetime.strptime(fecha_grado, '%Y-%m-%d').date()
+        
         aspirante.save()
-
+        return aspirante
 
     def get(self, request):
         return Personal.Notificacion(request=request)
@@ -115,18 +150,22 @@ class Nuevo_Personal(View):
     @staticmethod
     def validar_datos_aspirante(datos: dict, update=None):
         errores = []
-
-        # Configuración centralizada
+        
+        # Configuración centralizada basada en el modelo
         CONFIG = {
             'campos_obligatorios': [
-                'tipo', 'nombres', 'primer_apellido', 'segundo_apellido', 'sexo', 'ci',
+                'tipo', 'nombres', 'primer_apellido', 'sexo', 'ci',
                 'lugar_nacimiento', 'color_piel', 'estado_civil', 'ciudadano',
-                'procedencia_social', 'pais',
-                'facultad', 'salario', 'categoria_docente',
-                'grado_cientifico', 'direccion', 'telefono', 'solapin', 'username', 'email'
+                'procedencia_social', 'pais', 'centro', 'cargo', 'facultad',
+                'ces', 'departamento', 'salario', 'direccion', 'telefono', 'solapin',
+                'username', 'email'
+            ],
+            'campos_opcionales': [
+                'segundo_apellido', 'categoria_docente', 'fecha_otorgamiento_categoria',
+                'grado_cientifico', 'fecha_otorgamiento_grado'
             ],
             'opciones_validas': {
-                'tipo': Admin_models.TIPO_CHOICES,
+                'tipo': [x[0] for x in Admin_models.Aspirante.TIPO_CHOICES2],
                 'sexo': Admin_models.SEXO_CHOICES,
                 'color_piel': Admin_models.COLOR_PIEL_CHOICES,
                 'estado_civil': Admin_models.ESTADO_CIVIL_CHOICES,
@@ -136,50 +175,46 @@ class Nuevo_Personal(View):
             },
             'validaciones_regex': {
                 'ci': (r'^\d{11}$', "El CI debe tener exactamente 11 dígitos"),
-                'telefono': (r'^\+?\d{7,20}$', "Formato de teléfono inválido"),
+                'telefono': (r'^(\+53)?[1-8]\d{6,7}$|^(\+53)?5\d{7}$', 
+                            "Formato de teléfono inválido. Use +5371234567 o 51234567"),
                 'salario': (r'^\d+(\.\d{1,2})?$', "Formato de salario inválido"),
                 'email': (r'^[\w\.-]+@[\w\.-]+\.\w+$', "Correo electrónico no válido"),
-                'nombres': (r'^[\p{L}\s\'-]+$', "El campo 'nombres' solo debe contener letras y espacios"),
-                'primer_apellido': (r'^[\p{L}\s\'-]+$', "El campo 'primer apellido' solo debe contener letras y espacios"),
-                'segundo_apellido': (r'^[\p{L}\s\'-]*$', "El campo 'segundo apellido' solo debe contener letras y espacios"),
-                'lugar_nacimiento': (r'^[\p{L}\s\'-.,]+$', "El campo 'lugar de nacimiento' solo debe contener letras y signos de puntuación básicos"),
-                'centro': (r'^[\p{L}\s\'-.,()\d]+$', "El campo 'centro' contiene caracteres no válidos"),
-                'facultad': (r'^[\p{L}\s\'-.,()]+$', "El campo 'facultad' contiene caracteres no válidos"),
-                'departamento': (r'^[\p{L}\s\'-.,()]+$', "El campo 'departamento' contiene caracteres no válidos"),
-                'direccion': (r'^[\p{L}\s\'-.,\d/#]+$', "El campo 'dirección' contiene caracteres no válidos"),
-                'ciudadano': (r'^[\p{L}\s]+$', "El campo 'ciudadano' solo debe contener letras y espacios"),
-                'pais': (r'^[\p{L}\s]+$', "El campo 'país' solo debe contener letras y espacios"),
-                'cargo': (r'^[\p{L}\s\'-.,]+$', "El campo 'cargo' contiene caracteres no válidos"),
-                'ces': (r'^[\p{L}\s\'-.,\d]+$', "El campo 'CES' contiene caracteres no válidos"),
-                'especialidad': (r'^[\p{L}\s\'-.,]+$', "El campo 'especialidad' contiene caracteres no válidos"),
-                'username': (r'^[a-z0-9]+$', "El campo 'username' debe contener solo minúsculas y números, sin espacios"),
+                'nombres': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]+$', "Solo letras y espacios"),
+                'primer_apellido': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]+$', "Solo letras y espacios"),
+                'segundo_apellido': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]*$', "Solo letras y espacios"),
+                'ciudadano': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
+                'pais': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
+                'solapin': (r'^[a-zA-Z0-9]+$', "Solo caracteres alfanuméricos")
             },
             'longitudes_maximas': {
                 'nombres': 100, 'primer_apellido': 100, 'segundo_apellido': 100,
                 'ci': 11, 'lugar_nacimiento': 100, 'especialidad': 100, 'centro': 100,
                 'cargo': 100, 'facultad': 100, 'ces': 100, 'departamento': 100,
-                'direccion': 500, 'telefono': 20, 'ciudadano': 100, 'pais': 100, 'email': 100,
-                'username': 150, 'solapin': 50
+                'direccion': 500, 'telefono': 20, 'ciudadano': 100, 'pais': 100, 
+                'email': 100, 'username': 150, 'solapin': 50
             },
-            'campos_fecha': ['fecha_otorgamiento_categoria', 'fecha_otorgamiento_grado']
+            'campos_fecha': ['fecha_otorgamiento_categoria', 'fecha_otorgamiento_grado'],
+            'campos_unique': ['ci', 'solapin', 'username', 'email']
         }
 
-        # 1. Validar campos obligatorios
+        # 1. Validar campos obligatorios (excepto para actualización si no se envían)
         for campo in CONFIG['campos_obligatorios']:
-            if not datos.get(campo, '').strip():
+            valor = datos.get(campo)    
+            
+            if valor is None or (isinstance(valor, str) and not valor.strip()):
                 errores.append(f"El campo '{campo}' es obligatorio.")
 
         # 2. Validar opciones válidas
         for campo, opciones in CONFIG['opciones_validas'].items():
             valor = datos.get(campo)
-            if valor and valor not in opciones:
-                opciones_validas = [str(op) for op in opciones if op]
+            if valor not in opciones:
+                opciones_validas = [str(op) for op in opciones]
                 errores.append(f"Valor no válido para '{campo}'. Opciones válidas: {', '.join(opciones_validas)}")
 
         # 3. Validar formatos usando regex
         for campo, (patron, mensaje) in CONFIG['validaciones_regex'].items():
             valor = datos.get(campo)
-            if valor and not regex.match(patron, str(valor)):
+            if valor and not re.match(patron, str(valor)):
                 errores.append(mensaje)
 
         # 4. Validar longitudes máximas
@@ -188,71 +223,57 @@ class Nuevo_Personal(View):
             if valor and len(str(valor)) > max_length:
                 errores.append(f"El campo '{campo}' excede la longitud máxima de {max_length} caracteres")
 
-        # 5. Validar unicidad del CI y username
-        if datos.get('ci') and not any('ci' in e for e in errores):
-            queryset = Admin_models.Aspirante.objects.filter(ci=datos['ci'])
-            if update:
-                queryset = queryset.exclude(pk=update.pk)
-            if queryset.exists():
-                errores.append("El CI ya está registrado en el sistema")
+        # 5. Validar unicidad de campos únicos
+        for campo in CONFIG['campos_unique']:
+            valor = datos.get(campo)
+            queryset = None
+            if valor:
+                if campo in ['username', 'email']:
+                    queryset = User.objects.filter(**{campo: valor})
+                    if not update is None:
+                        queryset = queryset.exclude(pk=update.userid.pk)
+                else:
+                    queryset = Admin_models.Aspirante.objects.filter(**{campo: valor})
+                    if not update is None:
+                        queryset = queryset.exclude(pk=update.pk)
+                        
+                if queryset.exists():
+                    errores.append(f"El {campo} '{valor}' ya está registrado")
 
-        if datos.get('username') and not any('username' in e for e in errores):
-            queryset = User.objects.filter(username=datos['username'])
-            if update:
-                queryset = queryset.exclude(pk=update.pk)
-            if queryset.exists():
-                errores.append("El nombre de usuario ya está registrado en el sistema")
-
-        if datos.get('email') and not any('email' in e for e in errores):
-            queryset = User.objects.filter(email=datos['email'])
-            if update:
-                queryset = queryset.exclude(pk=update.pk)
-            if queryset.exists():
-                errores.append("El correo electrónico ya está registrado en el sistema")
-
-        # 6. Validar fechas si se proporcionan
+        # 6. Validar fechas
         for campo in CONFIG['campos_fecha']:
             valor = datos.get(campo)
-            if valor:
+            if not valor in ['','nan','None']:
                 try:
                     fecha = datetime.strptime(valor, '%Y-%m-%d').date()
                     if fecha > datetime.now().date():
                         errores.append(f"La fecha en '{campo}' no puede ser futura")
                 except ValueError:
-                    errores.append(f"Formato de fecha incorrecto en '{campo}'. Use el formato YYYY-MM-DD.")
+                    errores.append(f"Formato de fecha incorrecto en '{campo}'. Use YYYY-MM-DD")
+            else:
+                datos[campo] = None
 
         # 7. Validar coherencia entre categoría/grado y sus fechas
         categoria = datos.get('categoria_docente', '')
         fecha_categoria = datos.get('fecha_otorgamiento_categoria')
-        
         grado = datos.get('grado_cientifico', '')
         fecha_grado = datos.get('fecha_otorgamiento_grado')
 
-        # Validaciones para categoría docente
-        if categoria:
-            if categoria.lower() in ['ninguna', 'ninguno', '']:
-                if fecha_categoria:
-                    errores.append("No puede proporcionar fecha de otorgamiento si la categoría docente es 'Ninguna'")
-            elif not fecha_categoria:
-                errores.append("Debe proporcionar la fecha de otorgamiento cuando especifica una categoría docente")
-        
-        if fecha_categoria and (not categoria or categoria.lower() in ['ninguna', 'ninguno', '']):
-            errores.append("Debe especificar una categoría docente válida cuando proporciona la fecha de otorgamiento")
+        # Validación para categoría docente
+        if categoria and categoria.lower() not in ['ninguna', 'ninguno', '']:
+            if not fecha_categoria:
+                errores.append("Debe proporcionar fecha de otorgamiento para la categoría docente")
+        elif fecha_categoria:
+            errores.append("No puede tener fecha de categoría sin especificar una categoría válida")
 
-        # Validaciones para grado científico
-        if grado:
-            if grado.lower() in ['ninguno', 'ninguna', '']:
-                if fecha_grado:
-                    errores.append("No puede proporcionar fecha de otorgamiento si el grado científico es 'Ninguno'")
-            elif not fecha_grado:
-                errores.append("Debe proporcionar la fecha de otorgamiento cuando especifica un grado científico")
-        
-        if fecha_grado and (not grado or grado.lower() in ['ninguno', 'ninguna', '']):
-            errores.append("Debe especificar un grado científico válido cuando proporciona la fecha de otorgamiento")
+        # Validación para grado científico
+        if grado and grado.lower() not in ['ninguno', 'ninguna', '']:
+            if not fecha_grado:
+                errores.append("Debe proporcionar fecha de otorgamiento para el grado científico")
+        elif fecha_grado:
+            errores.append("No puede tener fecha de grado sin especificar un grado válido")
 
-        return 'OK' if not errores else ', '.join(errores)+"."
-
-
+        return 'OK' if not errores else ', '.join(errores) + "."
 
 
 
@@ -306,7 +327,12 @@ class Personal_CSV(View):
                             registros_con_error += 1
                             errores_detallados.append(f"Fila {index+1}: CI vacío/inválido")
                             continue
-                            
+
+                        telefono = row_dict.get('telefono', '')
+                        if len(telefono) == 10 and telefono.startswith('53'):
+                            row_dict['telefono'] = f"+{telefono}"
+
+                        
                         if Admin_models.Aspirante.objects.filter(ci=ci).exists():
                             asp_old = Admin_models.Aspirante.objects.get(ci=ci)
                             validacion = Nuevo_Personal.validar_datos_aspirante(datos=row_dict, update=asp_old)
@@ -342,21 +368,28 @@ class Personal_CSV(View):
                                 registros_con_error += 1
                                 errores_detallados.append(f"Fila {index+1}: {validacion}")
                         else:
-                            nuevo_aspirante = Nuevo_Personal.registrar(datos=row_dict)
-                            if nuevo_aspirante:
-                                registros_creados += 1
+                            
+                            validacion = Nuevo_Personal.validar_datos_aspirante(datos=row_dict)
+                            if validacion == 'OK':
+                                nuevo_aspirante = Nuevo_Personal.registrar(datos=row_dict)
+                                if nuevo_aspirante:
+                                    registros_creados += 1
+                                else:
+                                    registros_con_error += 1
+                                    errores_detallados.append(f"Fila {index+1}: Error al crear registro")
                             else:
                                 registros_con_error += 1
-                                errores_detallados.append(f"Fila {index+1}: Error al crear registro")
-                                
+                                errores_detallados.append(f"Fila {index+1}: {validacion}") 
                     except Exception as e:
                         registros_con_error += 1
                         errores_detallados.append(f"Fila {index+1}: Error - {str(e)}")
                 
                 # Eliminar aspirantes que NO están en el CSV
                 aspirantes_a_eliminar = Admin_models.Aspirante.objects.exclude(ci__in=cis_en_csv)
+                
                 cantidad_eliminados = aspirantes_a_eliminar.count()
-                aspirantes_a_eliminar.delete()
+                for userids in aspirantes_a_eliminar:
+                    userids.userid.delete()
                 
                 # Construir mensaje en un solo string
                 mensaje = (
@@ -385,44 +418,3 @@ class Personal_CSV(View):
         else:
             return Login_views.redirigir_usuario(request)    
 
-
-class Busqueda_Personal(View):
-    def get(self,request:HttpRequest):
-        return Login_views.redirigir_usuario(request=request)
-    
-
-    def post(self, request:HttpRequest):
-        if request.user.is_authenticated and request.user.is_staff:
-            buscar = escape(request.POST.get('buscar').strip())
-        
-            if buscar:
-                # Campos donde se buscará (solo los requeridos)
-                campos_busqueda = [
-                    'nombres',
-                    'primer_apellido',
-                    'segundo_apellido',
-                    'ci',
-                ]
-                
-                # Construir consulta OR para buscar en todos los campos
-                consulta = Q()
-                for campo in campos_busqueda:
-                    consulta |= Q(**{f"{campo}__icontains": buscar})  # Búsqueda insensible a mayúsculas/minúsculas
-                
-                # Filtrar aspirantes que cumplan al menos una condición
-                aspirantes = Admin_models.Aspirante.objects.filter(consulta).distinct().order_by('nombres', 'primer_apellido')
-            
-                return render(request, 'Admin/lista_personal.html', {
-                    'aspirantes':aspirantes,'termino_busqueda':buscar,
-                    'total_resultados': aspirantes.count(),
-                })
-            else:
-                # Si no hay término de búsqueda, mostrar todos ordenados
-                print( Admin_models.Aspirante.objects.all().order_by('nombres', 'primer_apellido'))
-                return render(request, 'Admin/lista_personal.html', {
-                    'aspirantes': Admin_models.Aspirante.objects.all().order_by('nombres', 'primer_apellido'),
-                    'termino_busqueda': '',
-                    'total_resultados': Admin_models.Aspirante.objects.count(),
-                })
-        return Login_views.redirigir_usuario(request=request)
-    

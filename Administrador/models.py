@@ -128,7 +128,8 @@ class Aspirante(models.Model):
     )
     solapin = models.CharField(
         max_length=50, 
-        verbose_name='Solapín',null=False
+        verbose_name='Solapín',null=False,
+        unique=True
     )
     class Meta:
         verbose_name = 'Aspirante'
