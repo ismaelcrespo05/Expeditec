@@ -10,7 +10,7 @@ class SessionExpiredMiddleware:
         response = self.get_response(request)
         
         # Verificar si la sesión expiró y el usuario no está autenticado
-        if not request.user.is_authenticated and request.path != reverse('login'):    
+        if not request.user.is_authenticated and not request.path in [reverse('login'),reverse('recuperar_clave'),reverse('enviar_token')]:    
             return redirect(reverse('login'))
         
         return response

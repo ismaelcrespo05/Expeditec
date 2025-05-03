@@ -1,0 +1,54 @@
+{% extends 'Aspirante/aspirante_base.html' %}
+{% load static %}
+
+{% block contenido %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Tarjeta principal con soporte para tema oscuro -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors duration-300">
+        <!-- Encabezado con color que contrasta en ambos temas -->
+        <div class="bg-blue-600 dark:bg-blue-800 px-6 py-4">
+            <h1 class="text-2xl font-bold text-white">Área Personal</h1>
+            <p class="text-blue-100 dark:text-blue-200">Bienvenido/a, {{ full_name }}</p>
+        </div>
+        
+        <!-- Sección de información personal -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Información Personal</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for key, value in datos_personales.items %}
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ key }}</p>
+                    <p class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ value|default:"No especificado" }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Sección de información académica -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Información Académica</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for key, value in datos_academicos.items %}
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ key }}</p>
+                    <p class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ value|default:"No especificado" }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Sección de información laboral -->
+        <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Información Laboral</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for key, value in datos_laborales.items %}
+                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ key }}</p>
+                    <p class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ value|default:"No especificado" }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

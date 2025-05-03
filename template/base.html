@@ -245,37 +245,42 @@
                     </button>
                 </div>
 
-                <!-- Barra de búsqueda añadida aquí -->
-                <div class="flex items-center flex-1 max-w-md mx-4">
-                    <div class="relative w-full">
-                        <form action="{% url 'busqueda_personal' %}" method="POST">
-                            {% csrf_token %}
-                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 dark:text-gray-400">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="m21 21-4.3-4.3"/>
-                                </svg>
-                            </div>
-                       
-                            <input 
-                                type="text" 
-                                id="search-personal" 
-                                name="buscar"
-                                class="block w-full py-2 pl-10 pr-4 text-sm bg-gray-100 border border-transparent rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white" 
-                                placeholder="Buscar personal..." 
-                                autocomplete="off"
-                            >
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
-                                <button type="button" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M18 6 6 18"/>
-                                        <path d="m6 6 12 12"/>
+                
+                {% if request.user.is_staff %}
+                    <!-- Barra de búsqueda añadida aquí -->
+                    <div class="flex items-center flex-1 max-w-md mx-4">
+                        <div class="relative w-full">
+                            <form action="{% url 'busqueda_personal' %}" method="POST">
+                                {% csrf_token %}
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 dark:text-gray-400">
+                                        <circle cx="11" cy="11" r="8"/>
+                                        <path d="m21 21-4.3-4.3"/>
                                     </svg>
-                                </button>
-                            </div>
-                        </form>
+                                </div>
+                        
+                                <input 
+                                    type="text" 
+                                    id="search-personal" 
+                                    name="buscar"
+                                    class="block w-full py-2 pl-10 pr-4 text-sm bg-gray-100 border border-transparent rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:placeholder-gray-400 dark:text-white" 
+                                    placeholder="Buscar personal..." 
+                                    autocomplete="off"
+                                >
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                                    <button type="button" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 6 6 18"/>
+                                            <path d="m6 6 12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
+                {% endif %}
+                    
+                
 
                 <div class="flex items-center space-x-2">
                     <button id="theme-toggle" class="p-2 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Cambiar tema">

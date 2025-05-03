@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+
+{% block sidebar %}            
+    <li>
+        <a href="{% url 'aspirante_dashboard' %}">
+            <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-white
+                {% if Dashboard %}
+                    bg-blue-600
+                {% else %}
+                    hover:bg-gray-800 hover:text-white
+                {% endif %}">
+                <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-column-big-icon lucide-chart-column-big"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="15" y="5" width="4" height="12" rx="1"/><rect x="7" y="8" width="4" height="9" rx="1"/></svg></span>
+                <span>Panel de Control</span>
+            </button>
+        </a>
+    </li>
+    <li>
+        <a href="{% url 'expediente_docente' %}">
+            <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300
+                {% if Personal %}
+                    bg-blue-600
+                {% else %}
+                    hover:bg-gray-800 hover:text-white
+                {% endif %}">
+                <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-icon lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                <span>Expediente</span>
+            </button>
+        </a>
+    </li>
+    <li>
+        <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300 hover:bg-gray-800 hover:text-white">
+            <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-user-icon lucide-file-user"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 18a3 3 0 1 0-6 0"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><circle cx="12" cy="13" r="2"/></svg></span>
+            <span>Cambio de Categoría</span>
+        </button>
+    </li>
+    <li>
+        <a href="{% url 'configuracion' %}">
+            <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300
+                {% if Configuracion %}
+                    bg-blue-600
+                {% else %}
+                    hover:bg-gray-800 hover:text-white
+                {% endif %}">
+                <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-cog-icon lucide-cog"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 22v-2"/><path d="m17 20.66-1-1.73"/><path d="M11 10.27 7 3.34"/><path d="m20.66 17-1.73-1"/><path d="m3.34 7 1.73 1"/><path d="M14 12h8"/><path d="M2 12h2"/><path d="m20.66 7-1.73 1"/><path d="m3.34 17 1.73-1"/><path d="m17 3.34-1 1.73"/><path d="m11 13.73-4 6.93"/></svg></span>
+                <span>Configuración</span>
+            </button>
+        </a>
+    </li>
+{% endblock sidebar %}
+    

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
     'Busqueda_Personal',
     'Configuracion',
     'verificacion_email',
+    'Aspirante',
 ]
 
 MIDDLEWARE = [
@@ -133,6 +135,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static',]
 STATIC_ROOT = BASE_DIR / 'colectstatics'
+
+# Configura el directorio base donde se guardarán los archivos subidos
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# URL base para servir archivos multimedia
+MEDIA_URL = '/media/'
+
 
 SESSION_COOKIE_AGE = 3600  # 1 hora en segundos
 SESSION_TIMEOUT_REDIRECT = ''
