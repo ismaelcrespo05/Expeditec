@@ -8,5 +8,4 @@ urlpatterns = [
     path('busqueda/',include('Busqueda_Personal.urls')),
     path('configuracion/',include('Configuracion.urls')),
     path('registro_personal_csv/',views.Personal_CSV.as_view(),name='personal_csv'),
-    path('verificacion_mail/',include('verificacion_email.urls'))
 ]

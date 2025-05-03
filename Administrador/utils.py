@@ -18,7 +18,7 @@ def generar_contraseña(longitud=24):
     num_mayusculas = rand.randint(1, longitud - 3)
     num_minusculas = rand.randint(1, longitud - num_mayusculas - 2)
     num_numeros = rand.randint(1, longitud - num_mayusculas - num_minusculas - 1)
-    num_caracteres_especiales = longitud - num_mayusculas - num_minusculas - num_numeros
+    
 
     # Generar los caracteres aleatorios
     contraseña = [
@@ -27,8 +27,6 @@ def generar_contraseña(longitud=24):
         secrets.choice(minusculas) for _ in range(num_minusculas)
     ] + [
         secrets.choice(numeros) for _ in range(num_numeros)
-    ] + [
-        secrets.choice(caracteres_especiales) for _ in range(num_caracteres_especiales)
     ]
     
     # Mezclar la contraseña para que los caracteres no estén en un patrón fijo

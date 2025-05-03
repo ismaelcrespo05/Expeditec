@@ -21,7 +21,7 @@ from . import utils
 
 class Dashboard(View):
     def get(self,request:HttpRequest):
-        if request.user.is_authenticated:
+        if request.user.is_authenticated and request.user.is_staff:
             cant_profesores = Admin_models.Aspirante.objects.filter(tipo='Profesor').count()
             cant_estudiantes = Admin_models.Aspirante.objects.filter(tipo='Estudiante').count()
             cantidad_x_categoria = utils.contar_por_categoria_docente()
@@ -51,14 +51,14 @@ class Dashboard(View):
 class Personal(View):
     @staticmethod
     def Notificacion(request:HttpRequest,Error=None,Success=None,back=None):
-        if request.user.is_authenticated:
+        if request.user.is_authenticated and request.user.is_staff:
             return render(request,'Admin/personal.html',{
                 'Personal':True,'Error':Error,'Success':Success,'back':back
             })
         return Login_views.redirigir_usuario(request)
     
     def get(self, request:HttpRequest):
-        if request.user.is_authenticated:
+        if request.user.is_authenticated and request.user.is_staff:
             return render(request,'Admin/personal.html',{
                 'Personal':True
             })
@@ -128,24 +128,30 @@ class Nuevo_Personal(View):
         return aspirante
 
     def get(self, request):
-        return Personal.Notificacion(request=request)
+        if request.user.is_authenticated and request.user.is_staff:
+            return Personal.Notificacion(request=request)
+        else:
+            return Login_views.redirigir_usuario(request=request)
     
     def post(self, request: HttpRequest):
-        # Obtener y limpiar datos
-        datos = {campo: escape(request.POST.get(campo, '')) 
-                for campo in request.POST.keys() 
-                if campo != 'csrfmiddlewaretoken'}
-        
-        # Convertir fechas de string a date
-        validacion = Nuevo_Personal.validar_datos_aspirante(datos=datos)
-        if validacion != 'OK':
-            return Personal.Notificacion(request=request, Error=validacion, back=request.POST)
-        try:
-            Nuevo_Personal.registrar(datos=datos)
-            return Personal.Notificacion(request=request, Success="Aspirante registrado exitosamente")
-        except Exception as e:
-            print(e)
-            return Personal.Notificacion(request=request, Error="Error al procesar el formulario", back=request.POST)
+        if request.user.is_authenticated and request.user.is_staff:
+            # Obtener y limpiar datos
+            datos = {campo: escape(request.POST.get(campo, '')) 
+                    for campo in request.POST.keys() 
+                    if campo != 'csrfmiddlewaretoken'}
+            
+            # Convertir fechas de string a date
+            validacion = Nuevo_Personal.validar_datos_aspirante(datos=datos)
+            if validacion != 'OK':
+                return Personal.Notificacion(request=request, Error=validacion, back=request.POST)
+            try:
+                Nuevo_Personal.registrar(datos=datos)
+                return Personal.Notificacion(request=request, Success="Aspirante registrado exitosamente")
+            except Exception as e:
+                print(e)
+                return Personal.Notificacion(request=request, Error="Error al procesar el formulario", back=request.POST)
+        else:
+            return Login_views.redirigir_usuario(request=request)
 
     @staticmethod
     def validar_datos_aspirante(datos: dict, update=None):
@@ -298,7 +304,7 @@ class Personal_CSV(View):
             
             try:
                 # Leer el archivo CSV con pandas
-                df = pd.read_csv(csv_file)
+                df = pd.read_csv(csv_file, dtype=str)
                 
                 # Convertir todas las columnas a string
                 df = df.astype(str)
@@ -328,11 +334,9 @@ class Personal_CSV(View):
                             errores_detallados.append(f"Fila {index+1}: CI vacío/inválido")
                             continue
 
-                        telefono = row_dict.get('telefono', '')
-                        if len(telefono) == 10 and telefono.startswith('53'):
-                            row_dict['telefono'] = f"+{telefono}"
-
                         
+                        
+
                         if Admin_models.Aspirante.objects.filter(ci=ci).exists():
                             asp_old = Admin_models.Aspirante.objects.get(ci=ci)
                             validacion = Nuevo_Personal.validar_datos_aspirante(datos=row_dict, update=asp_old)
