@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'Configuracion',
     'verificacion_email',
     'Aspirante',
+    'RRHH'
 ]
 
 MIDDLEWARE = [

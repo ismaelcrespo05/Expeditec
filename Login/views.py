@@ -28,6 +28,12 @@ def redirigir_usuario(request:HttpRequest):
         return redirect('aspirante_dashboard')
     except Exception:
         pass
+
+    try:
+        rrhh = Admin_models.RRHH.objects.get(userid=request.user)
+        return redirect('rrhh_dashboard')
+    except Exception as e:
+        pass
     #   return redirect('cliente_dashboard')
     
 
