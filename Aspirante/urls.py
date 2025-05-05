@@ -5,5 +5,8 @@ urlpatterns = [
     path('', views.AspiranteDashboardView.as_view(),name='aspirante_dashboard'),
     path('busqueda/',include('Busqueda_Personal.urls')),
     path('configuracion/',include('Configuracion.urls')),
-    path('expediente_docente/',views.ExpedienteDocenteView.as_view(),name="expediente_docente")
+    path('expediente_docente/',views.ExpedienteDocenteView.as_view(),name="expediente_docente"),
+    path('eliminar_documento/',views.Eliminar_ExpedienteDocenteView.as_view(),name="eliminar_documento"),
+    path('reemplazar_documento/',views.Update_ExpedienteDocenteView.as_view(),name="reemplazar_documento"),
+    path('cambio_categoria/',views.Cambio_Categoria.as_view(),name="cambio_categoria")
 ]

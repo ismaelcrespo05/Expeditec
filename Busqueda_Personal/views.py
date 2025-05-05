@@ -15,8 +15,8 @@ class Busqueda_Personal(View):
 
     def post(self, request:HttpRequest):
         if request.user.is_authenticated and request.user.is_staff:
-            buscar = escape(request.POST.get('buscar').strip())
-        
+            buscar_old = escape(request.POST.get('buscar').strip())
+            buscar = buscar_old.lower()
             if buscar:
                 # Campos donde se buscará (solo los requeridos)
                 campos_busqueda = [
@@ -35,7 +35,7 @@ class Busqueda_Personal(View):
                 aspirantes = Admin_models.Aspirante.objects.filter(consulta).distinct().order_by('nombres', 'primer_apellido')
             
                 return render(request, 'Busqueda_Personal/lista_personal.html', {
-                    'aspirantes':aspirantes,'termino_busqueda':buscar,
+                    'aspirantes':aspirantes,'termino_busqueda':buscar_old,
                     'total_resultados': aspirantes.count(),
                 })
             else:

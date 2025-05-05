@@ -78,6 +78,7 @@ class Aspirante(models.Model):
         max_length=100, 
         verbose_name='Cargo',null=False
     )
+    area = models.TextField(null=True)
     facultad = models.CharField(
         max_length=100, 
         verbose_name='Facultad',null=False
@@ -142,3 +143,8 @@ class Aspirante(models.Model):
     
     def __str__(self):
         return f"{self.primer_apellido} {self.segundo_apellido or ''}, {self.nombres} ({self.get_tipo_display()})"
+    
+
+class RRHH(models.Model):
+    userid = models.OneToOneField(User,on_delete=models.CASCADE,null=False)
+    

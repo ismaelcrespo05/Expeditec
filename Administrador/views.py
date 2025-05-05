@@ -95,30 +95,31 @@ class Nuevo_Personal(View):
         # Crear y guardar el aspirante
         aspirante = Admin_models.Aspirante(
             userid=userid,
-            tipo=datos['tipo'],
-            nombres=datos['nombres'],
-            primer_apellido=datos['primer_apellido'],
+            tipo=datos.get('tipo'),
+            nombres=datos.get('nombres'),
+            primer_apellido=datos.get('primer_apellido'),
             segundo_apellido=datos.get('segundo_apellido'),
-            sexo=datos['sexo'],
-            ci=datos['ci'],
-            lugar_nacimiento=datos['lugar_nacimiento'],
-            color_piel=datos['color_piel'],
-            estado_civil=datos['estado_civil'],
-            ciudadano=datos['ciudadano'],
-            procedencia_social=datos['procedencia_social'],
-            especialidad=datos['especialidad'],
-            pais=datos['pais'],
-            centro=datos['centro'],
-            cargo=datos['cargo'],
-            facultad=datos['facultad'],
-            ces=datos['ces'],
-            departamento=datos['departamento'],
-            salario=datos['salario'],
+            sexo=datos.get('sexo'),
+            ci=datos.get('ci'),
+            lugar_nacimiento=datos.get('lugar_nacimiento'),
+            color_piel=datos.get('color_piel'),
+            estado_civil=datos.get('estado_civil'),
+            ciudadano=datos.get('ciudadano'),
+            procedencia_social=datos.get('procedencia_social'),
+            especialidad=datos.get('especialidad'),
+            pais=datos.get('pais'),
+            centro=datos.get('centro'),
+            cargo=datos.get('cargo'),
+            facultad=datos.get('facultad'),
+            ces=datos.get('ces'),
+            departamento=datos.get('departamento'),
+            salario=datos.get('salario'),
             categoria_docente=datos.get('categoria_docente'),
-            direccion=datos['direccion'],
+            direccion=datos.get('direccion'),
             grado_cientifico=datos.get('grado_cientifico'),
-            telefono=datos['telefono'],
-            solapin=datos['solapin'],
+            telefono=datos.get('telefono'),
+            solapin=datos.get('solapin'),
+            area=datos.get('area'),
             # Parseamos las fechas directamente en el constructor
             fecha_otorgamiento_categoria=parse_fecha(datos.get('fecha_otorgamiento_categoria')),
             fecha_otorgamiento_grado=parse_fecha(datos.get('fecha_otorgamiento_grado'))
@@ -190,6 +191,7 @@ class Nuevo_Personal(View):
                 'segundo_apellido': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]*$', "Solo letras y espacios"),
                 'ciudadano': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
                 'pais': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
+                'area': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
                 'solapin': (r'^[a-zA-Z0-9]+$', "Solo caracteres alfanuméricos")
             },
             'longitudes_maximas': {
@@ -197,7 +199,7 @@ class Nuevo_Personal(View):
                 'ci': 11, 'lugar_nacimiento': 100, 'especialidad': 100, 'centro': 100,
                 'cargo': 100, 'facultad': 100, 'ces': 100, 'departamento': 100,
                 'direccion': 500, 'telefono': 20, 'ciudadano': 100, 'pais': 100, 
-                'email': 100, 'username': 150, 'solapin': 50
+                'email': 100, 'username': 150, 'solapin': 50,'area':100
             },
             'campos_fecha': ['fecha_otorgamiento_categoria', 'fecha_otorgamiento_grado'],
             'campos_unique': ['ci', 'solapin', 'username', 'email']
@@ -284,8 +286,6 @@ class Nuevo_Personal(View):
 
 
 
-
-
 class Personal_CSV(View):
     def get(self,request):
         return Personal.Notificacion(request=request)
@@ -366,6 +366,7 @@ class Personal_CSV(View):
                                 asp_old.fecha_otorgamiento_grado = row_dict.get('fecha_otorgamiento_grado', '')
                                 asp_old.telefono = row_dict.get('telefono', '')
                                 asp_old.solapin = row_dict.get('solapin', '')
+                                asp_old.area = row_dict.get('area','')
                                 asp_old.save()
                                 registros_actualizados += 1
                             else:
@@ -422,3 +423,118 @@ class Personal_CSV(View):
         else:
             return Login_views.redirigir_usuario(request)    
 
+
+
+
+
+class Personal_RRHH(View):
+    @staticmethod
+    def Notificacion(request: HttpRequest, Error=None, Success=None):
+        if request.user.is_authenticated and request.user.is_staff:
+            # Obtener todos los usuarios de RRHH
+            personal_rrhh = User.objects.filter(
+                id__in=Admin_models.RRHH.objects.all().values('userid_id')
+            ).order_by('-date_joined')
+            
+            return render(request, 'Admin/personal_rrhh.html', {
+                'personal_rrhh': personal_rrhh,
+                'Error': Error,
+                'Success': Success,
+                'Personal_RRHH':True
+            })
+        else:
+            return Login_views.redirigir_usuario(request)
+
+    def get(self, request: HttpRequest):
+        if request.user.is_authenticated and request.user.is_staff:
+            # Obtener todos los usuarios de RRHH con información adicional
+            rrhh_users = Admin_models.RRHH.objects.all().select_related('userid')
+            
+            # Crear lista con los datos que necesitamos mostrar
+            personal_rrhh = []
+            for rrhh in rrhh_users:
+                user = rrhh.userid
+                personal_rrhh.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'last_login': user.last_login,
+                    'date_joined': user.date_joined,
+                    'is_active': user.is_active
+                })
+            
+            return render(request, 'Admin/personal_rrhh.html', {
+                'personal_rrhh': personal_rrhh,
+                'Personal_RRHH':True
+            })
+        else:
+            return Login_views.redirigir_usuario(request)
+
+    def post(self, request: HttpRequest):
+        if request.user.is_staff:
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            
+            # Validar que el usuario no exista
+            if User.objects.filter(username=username).exists():
+                return self.Notificacion(
+                    request=request,
+                    Error='El nombre de usuario ya está en uso'
+                )
+            
+            if User.objects.filter(email=email).exists():
+                return self.Notificacion(
+                    request=request,
+                    Error='El correo electrónico ya está registrado'
+                )
+            
+            try:
+                # Crear nuevo usuario
+                nuevo_usuario = User(
+                    username=username,
+                    email=email,
+                    is_staff=False  # No es staff para que no tenga acceso a todo
+                )
+                pass1 = utils.generar_contraseña()
+                nuevo_usuario.set_password(pass1)
+                nuevo_usuario.save()
+                
+                # Asignar al modelo RRHH
+                Admin_models.RRHH.objects.create(userid=nuevo_usuario)
+                
+                # Opcional: Enviar correo con credenciales
+                # utils.enviar_credenciales(email, username, pass1)
+                
+                return self.Notificacion(
+                    request=request,
+                    Success=f'Usuario {username} creado con éxito.'
+                )
+            except Exception as e:
+                return self.Notificacion(
+                    request=request,
+                    Error=f'Error al crear usuario: {str(e)}'
+                )
+        else:
+            return Login_views.redirigir_usuario(request)
+        
+
+
+
+def delete_personal_rrhh(request):
+    if request.POST:
+        user_id = request.POST.get('user_id')
+        try:
+            userid = User.objects.get(id=user_id)
+            user_rh = Admin_models.RRHH.objects.get(userid=userid)
+            userid.delete()
+            return Personal_RRHH.Notificacion(
+                request=request,
+                Success='Usuario eliminado correctamente'
+            )
+        except Exception as e:
+            return Personal_RRHH.Notificacion(
+                request=request,
+                Error=f'Error al eliminar el usuario: {str(e)}'
+            )
+    else:
+        return Login_views.redirigir_usuario(request)
