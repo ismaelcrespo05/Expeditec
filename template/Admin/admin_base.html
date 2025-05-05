@@ -28,11 +28,26 @@
             </button>
         </a>
     </li>
-    <li>
+    <!--<li>
         <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300 hover:bg-gray-800 hover:text-white">
             <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-user-icon lucide-file-user"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 18a3 3 0 1 0-6 0"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><circle cx="12" cy="13" r="2"/></svg></span>
             <span>Evaluaciones</span>
         </button>
+    </li>-->
+    <li>
+        <a href="{% url 'rrhh' %}">
+            <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300
+                {% if Personal_RRHH %}
+                    bg-blue-600
+                {% else %}
+                    hover:bg-gray-800 hover:text-white
+                {% endif %}">
+                <span class="mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-user-round-icon lucide-circle-user-round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>    
+                </span>
+                <span>Personal RRHH</span>
+            </button>
+        </a>
     </li>
     <li>
         <a href="{% url 'configuracion' %}">

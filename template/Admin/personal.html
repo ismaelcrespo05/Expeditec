@@ -108,12 +108,11 @@
                         <input type="text" id="especialidad" name="especialidad" value="{{back.especialidad}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
                     
-                    <div>
-                        <label for="pais" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">País</label>
-                        <input required type="text" id="pais" name="pais" value="{{back.pais}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                    </div>
-                    
                     <!-- Columna 3 -->
+                    <div>
+                        <label for="area" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Área</label>
+                        <input type="text" id="area" name="area" value="{{back.area}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
                     <div>
                         <label for="centro" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Centro</label>
                         <input type="text" id="centro" name="centro" value="{{back.centro}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
@@ -122,6 +121,10 @@
                     <div>
                         <label for="cargo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
                         <input type="text" id="cargo" name="cargo" value="{{back.cargo}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label for="pais" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">País</label>
+                        <input required type="text" id="pais" name="pais" value="{{back.pais}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
                     
                     <div>
@@ -143,7 +146,10 @@
                         <label for="salario" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Salario</label>
                         <input required type="number" id="salario" name="salario" value="{{back.salario}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
-                    
+                    <div>
+                        <label for="direccion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección Particular</label>
+                        <input required type="text" id="direccion" name="direccion" value="{{back.direccion}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
                     <!-- Campos adicionales -->
                     <div>
                         <label for="categoria_docente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoría Docente/Científica</label>
@@ -163,10 +169,12 @@
                         <label for="fecha_otorgamiento_categoria" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de Otorgamiento (Categoría)</label>
                         <input type="date" id="fecha_otorgamiento_categoria" name="fecha_otorgamiento_categoria" value="{{back.fecha_otorgamiento_categoria}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
+                    
                     <div>
-                        <label for="direccion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección Particular</label>
-                        <input required type="text" id="direccion" name="direccion" value="{{back.direccion}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <label for="solapin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solapín</label>
+                        <input required type="text" id="solapin" name="solapin" value="{{back.solapin}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
+
                     <div>
                         <label for="grado_cientifico" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grado Científico</label>
                         <select required id="grado_cientifico" name="grado_cientifico" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
@@ -198,10 +206,7 @@
                         <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo electrónico</label>
                         <input required type="email" id="email" name="email" value="{{back.email}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
-                    <div>
-                        <label for="solapin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solapín</label>
-                        <input required type="text" id="solapin" name="solapin" value="{{back.solapin}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                    </div>
+                    
                 </div>
     
                 <div class="flex justify-end space-x-3 pt-4">

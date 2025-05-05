@@ -18,7 +18,7 @@
     <li>
         <a href="{% url 'expediente_docente' %}">
             <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300
-                {% if Personal %}
+                {% if Expediente %}
                     bg-blue-600
                 {% else %}
                     hover:bg-gray-800 hover:text-white
@@ -29,10 +29,17 @@
         </a>
     </li>
     <li>
-        <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300 hover:bg-gray-800 hover:text-white">
-            <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-user-icon lucide-file-user"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 18a3 3 0 1 0-6 0"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><circle cx="12" cy="13" r="2"/></svg></span>
-            <span>Cambio de Categoría</span>
-        </button>
+        <a href="{% url 'cambio_categoria' %}">
+            <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300
+                {% if Cambio_categoria %}
+                    bg-blue-600
+                {% else %}
+                    hover:bg-gray-800 hover:text-white
+                {% endif %}">
+                <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-user-icon lucide-file-user"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M15 18a3 3 0 1 0-6 0"/><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><circle cx="12" cy="13" r="2"/></svg></span>
+                <span>Cambio de Categoría</span>
+            </button>
+        </a>
     </li>
     <li>
         <a href="{% url 'configuracion' %}">
