@@ -20,7 +20,7 @@ class SolicitudCambioCategoria(models.Model):
     estado = models.TextField(null=False,default='Pendiente')
     
     # Documentación requerida según Artículo 28 [7][2]
-    documentos = models.ManyToManyField('DocumentosExpedienteDocente')
+    # documentos = models.ManyToManyField('DocumentosExpedienteDocente')
     
     class Meta:
         constraints = [
@@ -29,7 +29,6 @@ class SolicitudCambioCategoria(models.Model):
                 name='solicitud_unica_por_categoria'
             )
         ]
-    
     def __str__(self):
         return f"{self.aspirante} → {self.categoria_solicitada}"
 
@@ -45,10 +44,10 @@ TIPOS_DOCUMENTOS = [
     'Publicaciones científicas',
     'Certificado de idiomas',
     'Examen Problemas Sociales Ciencia/Tecnología',
+    'Foto de carnet',
     'Tutoría',
     'Otros'
 ]
-
 class DocumentosExpedienteDocente(models.Model):
     aspirante_id = models.ForeignKey(
         Admin_models.Aspirante,

@@ -5,7 +5,7 @@ from Administrador import models as Admin_models
 from django.utils.html import escape
 from django.views import View
 from django.db.models import Q
-
+from Configuracion import views as Config_views
 # Create your views here.
 
 class Busqueda_Personal(View):
@@ -14,7 +14,16 @@ class Busqueda_Personal(View):
     
 
     def post(self, request:HttpRequest):
-        if request.user.is_authenticated and request.user.is_staff:
+        rrhh = None
+        try:
+            rrhh = Admin_models.RRHH.objects.get(userid=request.user)
+        except Exception as e:
+            pass
+
+        if not request.user.is_staff and not rrhh:
+            return Login_views.redirigir_usuario(request=request)
+        
+        else:
             buscar_old = escape(request.POST.get('buscar').strip())
             buscar = buscar_old.lower()
             if buscar:
@@ -37,6 +46,8 @@ class Busqueda_Personal(View):
                 return render(request, 'Busqueda_Personal/lista_personal.html', {
                     'aspirantes':aspirantes,'termino_busqueda':buscar_old,
                     'total_resultados': aspirantes.count(),
+                    'rrhh':rrhh,
+                    'base':Config_views.get_base(request=request)
                 })
             else:
                 # Si no hay término de búsqueda, mostrar todos ordenados
@@ -44,6 +55,8 @@ class Busqueda_Personal(View):
                     'aspirantes': Admin_models.Aspirante.objects.all().order_by('nombres', 'primer_apellido'),
                     'termino_busqueda': '',
                     'total_resultados': Admin_models.Aspirante.objects.count(),
+                    'rrhh':rrhh,
+                    'base':Config_views.get_base(request=request),
                 })
-        return Login_views.redirigir_usuario(request=request)
+        
     

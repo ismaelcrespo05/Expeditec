@@ -145,6 +145,9 @@ class Aspirante(models.Model):
         return f"{self.primer_apellido} {self.segundo_apellido or ''}, {self.nombres} ({self.get_tipo_display()})"
     
 
+
+
+
 class RRHH(models.Model):
     userid = models.OneToOneField(User,on_delete=models.CASCADE,null=False)
     

@@ -240,32 +240,127 @@ class Update_ExpedienteDocenteView(View):
                 return ExpedienteDocenteView.Notificacion(request,template_name=self.template_name,aspirante_id=aspirante_id,Error="Documento no encontrado")
         return ExpedienteDocenteView.Notificacion(request,template_name=self.template_name,aspirante_id=aspirante_id)
 
+##########################################################################################################################
+##########################################################################################################################
+##########################################################################################################################
 
 
 class Cambio_Categoria(View):
     @staticmethod
     def Notificacion(request,Error=None,Success=None):
-        aspirante_id = None
         try:
-            aspirante_id = Admin_models.Aspirante.objects.get(userid=request.user)
-            return render(request,'Aspirante/cambio_categoria.html',{
-                "Cambio_categoria":True,
-                "Error":Error,'Success':Success
-            })
-        except Exception as e:
-            return Login_views.redirigir_usuario(request)
-        
-        
-    def get(self, request):
-        aspirante_id = None
-        try:
-            aspirante_id = Admin_models.Aspirante.objects.get(userid=request.user)
-            return render(request,'Aspirante/cambio_categoria.html',{
-                "Cambio_categoria":True
-            })
-        except Exception as e:
-            return Login_views.redirigir_usuario(request)
-        
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            
+            # Obtenemos todas las solicitudes ordenadas por fecha descendente (más recientes primero)
+            solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(
+                aspirante=aspirante
+            ).order_by('-fecha_solicitud')
+            
+            # Definimos los estados posibles
+            ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
+            
+            # Pre-filtramos las solicitudes por estado
+            solicitudes_por_estado = {
+                estado: solicitudes.filter(estado=estado) 
+                for estado in ESTADOS
+            }
+            
+            # Verificamos si puede solicitar (no tiene solicitudes pendientes o en revisión)
+            tiene_solicitudes_activas = solicitudes.filter(
+                estado__in=['Pendiente', 'En revisión']
+            ).exists()
+            
+            # Obtener las categorías disponibles (excluyendo "Ninguna" y la actual)
+            categorias_disponibles = [
+                cat for cat in Admin_models.CATEGORIA_DOCENTE_CHOICES 
+                if cat != 'Ninguna' and cat != aspirante.categoria_docente
+            ]
 
+            return render(request, 'Aspirante/cambio_categoria.html', {
+                "Cambio_categoria": True,
+                "solicitudes_por_estado": solicitudes_por_estado,
+                "ESTADOS": ESTADOS,
+                "puede_solicitar": not tiene_solicitudes_activas,
+                "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
+                "categoria_actual": aspirante.categoria_docente,
+                'Error':Error,'Success':Success
+            })
+            
+        except Admin_models.Aspirante.DoesNotExist:
+            return Login_views.redirigir_usuario(request)
+
+    def get(self, request):
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            
+            # Obtenemos todas las solicitudes ordenadas por fecha descendente
+            solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(
+                aspirante=aspirante
+            ).order_by('-fecha_solicitud')
+            
+            # Definimos los estados posibles
+            ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
+            
+            # Pre-filtramos las solicitudes por estado
+            solicitudes_por_estado = {
+                estado: solicitudes.filter(estado=estado) 
+                for estado in ESTADOS
+            }
+            
+            # Calculamos el total de solicitudes
+            total_solicitudes = solicitudes.count()
+            
+            # Verificamos si puede solicitar (no tiene solicitudes pendientes o en revisión)
+            tiene_solicitudes_activas = solicitudes.filter(
+                estado__in=['Pendiente', 'En revisión']
+            ).exists()
+            
+            # Obtener las categorías disponibles (excluyendo "Ninguna" y la actual)
+            categorias_disponibles = [
+                cat for cat in Admin_models.CATEGORIA_DOCENTE_CHOICES 
+                if cat != 'Ninguna' and cat != aspirante.categoria_docente
+            ]
+
+            return render(request, 'Aspirante/cambio_categoria.html', {
+                "Cambio_categoria": True,
+                "solicitudes_por_estado": solicitudes_por_estado,
+                "ESTADOS": ESTADOS,
+                "puede_solicitar": not tiene_solicitudes_activas,
+                "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
+                "categoria_actual": aspirante.categoria_docente,
+                "total_solicitudes": total_solicitudes  # Nuevo campo añadido
+            })
+            
+        except Admin_models.Aspirante.DoesNotExist:
+            return Login_views.redirigir_usuario(request)
     def post(self, request):
-        pass
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            return Cambio_Categoria.Notificacion(request)
+        except Exception as e:
+            return Login_views.redirigir_usuario(request)
+
+
+class Generar_Solicitud(View):
+    def get(self,request):
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            return Cambio_Categoria.Notificacion(request)
+        except Exception as e:
+            return Login_views.redirigir_usuario(request)
+    
+    def post(self, request):
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            categoria_solicitada = request.POST.get('categoria_solicitada')
+            if not categoria_solicitada in Admin_models.CATEGORIA_DOCENTE_CHOICES:
+                return Cambio_Categoria.Notificacion(request=request,Error="Categoría docente inválida")
+            
+            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.create(
+                aspirante=aspirante,
+                categoria_solicitada=categoria_solicitada
+            )
+            
+            return Cambio_Categoria.Notificacion(request=request,Success="Solicitud enviada con éxito")
+        except Exception as e:
+            return Login_views.redirigir_usuario(request)
