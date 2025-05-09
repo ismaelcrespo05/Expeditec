@@ -129,9 +129,13 @@
                                         Editar
                                     </a>
                                 {% endif %}
-                                <a href="" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                    Ver detalles
-                                </a>
+                                <form action="{% url 'expediente_personal' %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="aspirante_id" value="{{aspirante.id}}">
+                                    <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Ver detalles
+                                    </a>
+                                </form>
                             </div>
                         </div>
                     </div>

@@ -23,7 +23,9 @@
                 {% else %}
                     hover:bg-gray-800 hover:text-white
                 {% endif %}">
-                <span class="mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-icon lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                <span class="mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-search-icon lucide-text-search"><path d="M21 6H3"/><path d="M10 12H3"/><path d="M10 18H3"/><circle cx="17" cy="15" r="3"/><path d="m21 19-1.9-1.9"/></svg>
+                </span>
                 <span>Expediente</span>
             </button>
         </a>
@@ -41,6 +43,25 @@
             </button>
         </a>
     </li>
+    
+    {% if tribunales %}
+        <li>
+            <a href="{% url 'tribunales' %}">
+                <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300
+                    {% if Tribunales %}
+                        bg-blue-600
+                    {% else %}
+                        hover:bg-gray-800 hover:text-white
+                    {% endif %}">
+                    <span class="mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-icon lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
+                    </span>
+                    <span>Tribunales</span>
+                </button>
+            </a>
+        </li>
+    {% endif %}
+        
     <li>
         <a href="{% url 'configuracion' %}">
             <button class="w-full flex items-center rounded-md px-4 py-3 text-sm transition-colors duration-200 text-gray-300
