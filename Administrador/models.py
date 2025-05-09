@@ -133,9 +133,6 @@ class Aspirante(models.Model):
         unique=True
     )
 
-
-    tribunal = models.BooleanField(null=True,default=False)
-
     class Meta:
         verbose_name = 'Aspirante'
         verbose_name_plural = 'Aspirantes'

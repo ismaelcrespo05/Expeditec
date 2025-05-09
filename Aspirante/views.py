@@ -5,54 +5,70 @@ from django.views import View
 from . import models as Aspirante_models
 from django.http import HttpRequest
 class AspiranteDashboardView(View):
+    @staticmethod
+    def get_contexto(aspirante):
+        # Organizar los datos en secciones lógicas
+        datos_personales = {
+            'Nombres': aspirante.nombres,
+            'Apellidos': f"{aspirante.primer_apellido} {aspirante.segundo_apellido or ''}",
+            'CI': aspirante.ci,
+            'Solapín': aspirante.solapin,
+            'Sexo': aspirante.sexo,
+            'Lugar de nacimiento': aspirante.lugar_nacimiento,
+            'Color de piel': aspirante.color_piel,
+            'Estado civil': aspirante.estado_civil,
+            'Ciudadano': aspirante.ciudadano,
+            'Procedencia social': aspirante.procedencia_social,
+            'Dirección particular': aspirante.direccion,
+            'Teléfono': aspirante.telefono,
+        }
+
+        datos_academicos = {
+            'Tipo': aspirante.tipo,
+            'Especialidad': aspirante.especialidad,
+            'País': aspirante.pais,
+            'Facultad': aspirante.facultad,
+            'CES': aspirante.ces,
+            'Departamento': aspirante.departamento,
+        }
+
+        datos_laborales = {
+            'Centro de trabajo': aspirante.centro,
+            'Cargo': aspirante.cargo,
+            'Area':aspirante.area,
+            'Salario': f"{aspirante.salario:.2f}",
+            'Categoría docente': aspirante.categoria_docente if aspirante.categoria_docente else 'No aplica',
+            'Fecha otorgamiento categoría': aspirante.fecha_otorgamiento_categoria.strftime('%d/%m/%Y') if aspirante.fecha_otorgamiento_categoria else 'No aplica',
+            'Grado científico': aspirante.grado_cientifico if aspirante.grado_cientifico else 'No aplica',
+            'Fecha otorgamiento grado': aspirante.fecha_otorgamiento_grado.strftime('%d/%m/%Y') if aspirante.fecha_otorgamiento_grado else 'No aplica',
+        }
+
+        
+        return {
+            'Dashboard':True,
+            'aspirante': aspirante,
+            'datos_personales': datos_personales,
+            'datos_academicos': datos_academicos,
+            'datos_laborales': datos_laborales,
+            'full_name': f"{aspirante.nombres} {aspirante.primer_apellido} {aspirante.segundo_apellido or ''}",
+            'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
+        }
+    
+    @staticmethod
+    def Notificacion(request:HttpRequest,Error=None,Success=None):
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            context = AspiranteDashboardView.get_contexto(aspirante)
+            context['Error'] = Error
+            context['Success'] = Success
+            return render(request, 'Aspirante/dashboard_aspirante.html', context)
+        except Exception as e:
+            return Login_views.redirigir_usuario(request)
+        
     def get(self, request):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
-            
-            # Organizar los datos en secciones lógicas
-            datos_personales = {
-                'Nombres': aspirante.nombres,
-                'Apellidos': f"{aspirante.primer_apellido} {aspirante.segundo_apellido or ''}",
-                'CI': aspirante.ci,
-                'Solapín': aspirante.solapin,
-                'Sexo': aspirante.sexo,
-                'Lugar de nacimiento': aspirante.lugar_nacimiento,
-                'Color de piel': aspirante.color_piel,
-                'Estado civil': aspirante.estado_civil,
-                'Ciudadano': aspirante.ciudadano,
-                'Procedencia social': aspirante.procedencia_social,
-                'Dirección particular': aspirante.direccion,
-                'Teléfono': aspirante.telefono,
-            }
-
-            datos_academicos = {
-                'Tipo': aspirante.tipo,
-                'Especialidad': aspirante.especialidad,
-                'País': aspirante.pais,
-                'Facultad': aspirante.facultad,
-                'CES': aspirante.ces,
-                'Departamento': aspirante.departamento,
-            }
-
-            datos_laborales = {
-                'Centro de trabajo': aspirante.centro,
-                'Cargo': aspirante.cargo,
-                'Area':aspirante.area,
-                'Salario': f"{aspirante.salario:.2f}",
-                'Categoría docente': aspirante.categoria_docente if aspirante.categoria_docente else 'No aplica',
-                'Fecha otorgamiento categoría': aspirante.fecha_otorgamiento_categoria.strftime('%d/%m/%Y') if aspirante.fecha_otorgamiento_categoria else 'No aplica',
-                'Grado científico': aspirante.grado_cientifico if aspirante.grado_cientifico else 'No aplica',
-                'Fecha otorgamiento grado': aspirante.fecha_otorgamiento_grado.strftime('%d/%m/%Y') if aspirante.fecha_otorgamiento_grado else 'No aplica',
-            }
-
-            context = {
-                'Dashboard':True,
-                'aspirante': aspirante,
-                'datos_personales': datos_personales,
-                'datos_academicos': datos_academicos,
-                'datos_laborales': datos_laborales,
-                'full_name': f"{aspirante.nombres} {aspirante.primer_apellido} {aspirante.segundo_apellido or ''}",
-            }
+            context = AspiranteDashboardView.get_contexto(aspirante)
             return render(request, 'Aspirante/dashboard_aspirante.html', context)
             
         except Exception as e:
@@ -91,9 +107,12 @@ class ExpedienteDocenteView(View):
         return {
             'TIPOS_DOCUMENTOS': self.TIPOS_DOCUMENTOS,
             'documentos_por_tipo': documentos_ordenados,
-            'aspirante': aspirante_id
+            'aspirante': aspirante_id,
+            'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante_id)
         }
     
+
+
     @staticmethod
     def Notificacion(request, template_name, aspirante_id, Error=None, Success=None):
         try:
@@ -283,7 +302,8 @@ class Cambio_Categoria(View):
                 "puede_solicitar": not tiene_solicitudes_activas,
                 "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
                 "categoria_actual": aspirante.categoria_docente,
-                'Error':Error,'Success':Success
+                'Error':Error,'Success':Success,
+                'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
             })
             
         except Admin_models.Aspirante.DoesNotExist:
@@ -320,7 +340,7 @@ class Cambio_Categoria(View):
                 cat for cat in Admin_models.CATEGORIA_DOCENTE_CHOICES 
                 if cat != 'Ninguna' and cat != aspirante.categoria_docente
             ]
-
+            print(categorias_disponibles)
             return render(request, 'Aspirante/cambio_categoria.html', {
                 "Cambio_categoria": True,
                 "solicitudes_por_estado": solicitudes_por_estado,
@@ -328,7 +348,8 @@ class Cambio_Categoria(View):
                 "puede_solicitar": not tiene_solicitudes_activas,
                 "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
                 "categoria_actual": aspirante.categoria_docente,
-                "total_solicitudes": total_solicitudes  # Nuevo campo añadido
+                "total_solicitudes": total_solicitudes,  # Nuevo campo añadido
+                'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante)
             })
             
         except Admin_models.Aspirante.DoesNotExist:
@@ -363,4 +384,147 @@ class Generar_Solicitud(View):
             
             return Cambio_Categoria.Notificacion(request=request,Success="Solicitud enviada con éxito")
         except Exception as e:
+            print(e)
             return Login_views.redirigir_usuario(request)
+        
+
+def Eliminar_Solicitud(request:HttpRequest):
+    aspirante = None
+    try:
+        aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+    except Exception as e:
+        print(e)
+        return Login_views.redirigir_usuario(request)
+    if request.POST:
+        solicitud_id = request.POST.get('solicitud_id')
+        try:
+            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id,aspirante=aspirante)
+            if solicitud.estado in ['Pendiente','En revisión']:
+                solicitud.delete()
+                return Cambio_Categoria.Notificacion(request=request,Success="Solicitud cancelada con éxito")
+            return Cambio_Categoria.Notificacion(request=request,Success="La solicitud ya fue finalizada")
+        except Exception as e:
+            print(e)
+            return Cambio_Categoria.Notificacion(request=request,Error="Solicitud no encontrada")
+    else:
+        return Cambio_Categoria.Notificacion(request=request)
+    
+
+from RRHH import models as RRHH_models
+def is_tribunal(aspirante:Admin_models.Aspirante):
+    return RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).exists()
+    
+
+
+class Tribunal(View):
+    @staticmethod
+    def Notificacion(request,Error=None, Success=None):
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            if is_tribunal(aspirante):            
+                # Obtenemos todas las solicitudes ordenadas por fecha descendente (más recientes primero)
+                tribunales = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id')
+                tribunales = RRHH_models.Tribunal.objects.filter(id__in=tribunales).values_list('solicitud_id')
+                solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=tribunales).order_by('-fecha_solicitud')
+                
+                # Definimos los estados posibles
+                ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
+                
+                # Pre-filtramos las solicitudes por estado
+                solicitudes_por_estado = {
+                    estado: solicitudes.filter(estado=estado) 
+                    for estado in ESTADOS
+                }
+                
+                return render(request,'Tribunal/tribunal.html', {
+                    "Tribunales": True,
+                    "solicitudes_por_estado": solicitudes_por_estado,
+                    "ESTADOS": ESTADOS,
+                    "categoria_actual": aspirante.categoria_docente,
+                    'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
+                    'Error':Error,'Success':Success
+                })
+            else:
+                return AspiranteDashboardView.Notificacion(request=request,Error="No eres miembro de ningún tribunal.")    
+        except Exception as e:
+            print(e)
+        return Login_views.redirigir_usuario(request)
+
+
+    def get(self,request):
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            if is_tribunal(aspirante):            
+                # Obtenemos todas las solicitudes ordenadas por fecha descendente (más recientes primero)
+                tribunales = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id')
+                tribunales = RRHH_models.Tribunal.objects.filter(id__in=tribunales).values_list('solicitud_id')
+                solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=tribunales).order_by('-fecha_solicitud')
+                
+                # Definimos los estados posibles
+                ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
+                
+                # Pre-filtramos las solicitudes por estado
+                solicitudes_por_estado = {
+                    estado: solicitudes.filter(estado=estado) 
+                    for estado in ESTADOS
+                }
+                
+                return render(request,'Tribunal/tribunal.html', {
+                    "Tribunales": True,
+                    "solicitudes_por_estado": solicitudes_por_estado,
+                    "ESTADOS": ESTADOS,
+                    "categoria_actual": aspirante.categoria_docente,
+                    'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
+                })
+            else:
+                return AspiranteDashboardView.Notificacion(request=request,Error="No eres miembro de ningún tribunal.")    
+        except Exception as e:
+            print(e)
+        return Login_views.redirigir_usuario(request)
+
+    def post(self, request):
+        aspirante = None
+        solicitud = None
+        tribunal = None
+        miembro = None
+        #validar aspirante
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+        except Exception as e:
+            print(e)
+            return Login_views.redirigir_usuario(request=request)
+        
+        #validar solicitud y que es miembro de tribunal
+        if is_tribunal(aspirante):
+            solicitud_id = request.POST.get('solicitud_id')
+            try:
+                solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id)
+                tribunal = RRHH_models.Tribunal.objects.get(solicitud_id=solicitud)
+            except Exception as e:
+                print(e)
+                return AspiranteDashboardView.Notificacion(request=request,Error="Error al procesar la solicitud.")    
+        else:
+            return AspiranteDashboardView.Notificacion(request=request,Error="No eres miembro de ningún tribunal.")    
+        
+        #validar si es miembro
+        try:
+            miembro = RRHH_models.Miembro_tribunal.objects.get(tribunal_id=tribunal,miembro=aspirante)
+        except Exception as e:
+            print(e)
+            return Tribunal.Notificacion(request=request,Error="Usted no es miembro de este tribunal.")
+        
+        archivo = request.FILES.get('archivo')
+        if not archivo:
+            return Tribunal.Notificacion(request=request,Error="El campo de archivo es obligatorio.")
+        
+        descripcion = request.POST.get('descripcion')
+
+        acta = Aspirante_models.Actas_Tribunal.objects.create(
+            solicitud_id=solicitud,
+            archivo = archivo,
+            descripcion=descripcion,
+        )
+        acta.save()
+        return Tribunal.Notificacion(request=request,Success="El acta se ha publicado con éxito.")
+
+        

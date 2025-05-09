@@ -12,6 +12,7 @@ from django.contrib.sessions.models import Session
 from django.utils.dateparse import parse_datetime
 
 from Administrador import models as Admin_models
+from RRHH import models as RRHH_models
 # Create your views here.
 
 
@@ -30,6 +31,12 @@ def get_base(request):
     except Exception as e:
         pass
 
+def get_tribunales(request):
+    try:
+        aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+        return RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante)
+    except Exception as e:
+        return None
 
 class Configuracion(View):
     @staticmethod
@@ -40,7 +47,8 @@ class Configuracion(View):
                 'Configuracion':True,
                 'Error':Error,'Success':Success,
                 'sesiones':sesiones,'sesion_actual':request.session.session_key,
-                'base':get_base(request)
+                'base':get_base(request),
+                'tribunales':get_tribunales(request),
             })
         else:
             return Login_views.redirigir_usuario(request=request)
@@ -52,7 +60,8 @@ class Configuracion(View):
             return render(request,'Configuracion/configuracion.html',{
                 'Configuracion':True,
                 'sesiones':sesiones,'sesion_actual':request.session.session_key,
-                'base':get_base(request)
+                'base':get_base(request),
+                'tribunales':get_tribunales(request),
             })
         else:
             return Login_views.redirigir_usuario(request=request)
