@@ -139,7 +139,7 @@ class Aspirante(models.Model):
         ordering = ['nombres', 'primer_apellido']
     
     def __str__(self):
-        return f"{self.primer_apellido} {self.segundo_apellido or ''}, {self.nombres} ({self.get_tipo_display()})"
+        return f"{self.grado_cientifico} {self.nombres} {self.primer_apellido} {self.segundo_apellido or ''} ({self.get_tipo_display()} {self.categoria_docente})"
     
 
 

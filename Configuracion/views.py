@@ -8,6 +8,9 @@ from . import utils
 from django.contrib.auth import authenticate, login as auth_login
 from django.utils import timezone
 from user_agents import parse
+from django_user_agents.utils import get_user_agent
+from django.conf import settings
+
 from django.contrib.sessions.models import Session
 from django.utils.dateparse import parse_datetime
 
@@ -31,13 +34,8 @@ def get_base(request):
     except Exception as e:
         pass
 
-def get_tribunales(request):
-    try:
-        aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
-        return RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante)
-    except Exception as e:
-        return None
 
+from Aspirante import views as Aspirante_views
 class Configuracion(View):
     @staticmethod
     def Notificacion(request:HttpRequest,Error=None,Success=None):
@@ -48,7 +46,7 @@ class Configuracion(View):
                 'Error':Error,'Success':Success,
                 'sesiones':sesiones,'sesion_actual':request.session.session_key,
                 'base':get_base(request),
-                'tribunales':get_tribunales(request),
+                'tribunales':Aspirante_views.is_tribunal(),
             })
         else:
             return Login_views.redirigir_usuario(request=request)
@@ -61,7 +59,7 @@ class Configuracion(View):
                 'Configuracion':True,
                 'sesiones':sesiones,'sesion_actual':request.session.session_key,
                 'base':get_base(request),
-                'tribunales':get_tribunales(request),
+                'tribunales':Aspirante_views.is_tribunal(),
             })
         else:
             return Login_views.redirigir_usuario(request=request)
@@ -147,8 +145,6 @@ class Configuracion(View):
 
 
 
-
-
 class Cambiar_clave(View):
     def get(self,request:HttpRequest):
         if request.user.is_authenticated:
@@ -169,6 +165,28 @@ class Cambiar_clave(View):
                     request.user.save()
                     user = authenticate(request, username=request.user.username, password=pass1)
                     auth_login(request, user)
+
+                    user_agent = get_user_agent(request)
+                
+                    # Guardar información en la sesión
+                    request.session['user_agent'] = str(user_agent)
+                    request.session['ip_address'] = request.META.get('REMOTE_ADDR')
+                    request.session['login_time'] = timezone.now().isoformat()
+                    
+                    # También puedes guardar los datos parseados directamente
+                    request.session['device_info'] = {
+                        'navegador': user_agent.browser.family,
+                        'version': user_agent.browser.version_string,
+                        'sistema_operativo': user_agent.os.family,
+                        'dispositivo': 'Móvil' if user_agent.is_mobile else 
+                                    'Tablet' if user_agent.is_tablet else 
+                                    'Computadora' if user_agent.is_pc else 
+                                    'Bot' if user_agent.is_bot else 'Desconocido'
+                    }
+
+
+                    request.session.set_expiry(settings.SESSION_COOKIE_AGE)
+                    request.session.save()
                     return Configuracion.Notificacion(request=request,Success="Contraseña actualizada correctamente")
                 else:
                     return Configuracion.Notificacion(request=request,Error=f"{valid}. Verifique nuevamente su correo electrónico.")

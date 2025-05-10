@@ -51,7 +51,7 @@ class AspiranteDashboardView(View):
             'datos_academicos': datos_academicos,
             'datos_laborales': datos_laborales,
             'full_name': f"{aspirante.nombres} {aspirante.primer_apellido} {aspirante.segundo_apellido or ''}",
-            'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
+            'tribunales':is_tribunal(aspirante),
         }
     
     @staticmethod
@@ -108,7 +108,7 @@ class ExpedienteDocenteView(View):
             'TIPOS_DOCUMENTOS': self.TIPOS_DOCUMENTOS,
             'documentos_por_tipo': documentos_ordenados,
             'aspirante': aspirante_id,
-            'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante_id)
+            'tribunales':is_tribunal(aspirante_id),
         }
     
 
@@ -303,7 +303,7 @@ class Cambio_Categoria(View):
                 "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
                 "categoria_actual": aspirante.categoria_docente,
                 'Error':Error,'Success':Success,
-                'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
+                'tribunales':is_tribunal(aspirante),
             })
             
         except Admin_models.Aspirante.DoesNotExist:
@@ -349,7 +349,7 @@ class Cambio_Categoria(View):
                 "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
                 "categoria_actual": aspirante.categoria_docente,
                 "total_solicitudes": total_solicitudes,  # Nuevo campo añadido
-                'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante)
+                'tribunales':is_tribunal(aspirante),
             })
             
         except Admin_models.Aspirante.DoesNotExist:
@@ -377,12 +377,15 @@ class Generar_Solicitud(View):
             if not categoria_solicitada in Admin_models.CATEGORIA_DOCENTE_CHOICES:
                 return Cambio_Categoria.Notificacion(request=request,Error="Categoría docente inválida")
             
-            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.create(
-                aspirante=aspirante,
-                categoria_solicitada=categoria_solicitada
-            )
-            
-            return Cambio_Categoria.Notificacion(request=request,Success="Solicitud enviada con éxito")
+            if not Aspirante_models.SolicitudCambioCategoria.objects.filter(aspirante=aspirante,estado__in=['Pendiente','En revisión']).exists():
+                solicitud = Aspirante_models.SolicitudCambioCategoria.objects.create(
+                    aspirante=aspirante,
+                    categoria_solicitada=categoria_solicitada
+                )
+                
+                return Cambio_Categoria.Notificacion(request=request,Success="Solicitud enviada con éxito")
+            else:
+                return Cambio_Categoria.Notificacion(request=request,Error="Ya hay una solicitud pendiente o en resivión")
         except Exception as e:
             print(e)
             return Login_views.redirigir_usuario(request)
@@ -411,8 +414,22 @@ def Eliminar_Solicitud(request:HttpRequest):
     
 
 from RRHH import models as RRHH_models
-def is_tribunal(aspirante:Admin_models.Aspirante):
-    return RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).exists()
+def is_tribunal(aspirante:Admin_models.Aspirante = None,request:HttpRequest = None):
+    if aspirante:
+        membresia = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id')
+        membresia = RRHH_models.Tribunal.objects.filter(id__in=membresia).values_list('solicitud_id')
+        membresia = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=membresia,estado='En revisión')
+        return False if not membresia else True
+    else:
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            membresia = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id')
+            membresia = RRHH_models.Tribunal.objects.filter(id__in=membresia).values_list('solicitud_id')
+            membresia = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=membresia,estado='En revisión')
+            return False if not membresia else True
+        except Exception as e:
+            return False
+    
     
 
 
@@ -435,13 +452,12 @@ class Tribunal(View):
                     estado: solicitudes.filter(estado=estado) 
                     for estado in ESTADOS
                 }
-                
                 return render(request,'Tribunal/tribunal.html', {
                     "Tribunales": True,
                     "solicitudes_por_estado": solicitudes_por_estado,
                     "ESTADOS": ESTADOS,
                     "categoria_actual": aspirante.categoria_docente,
-                    'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
+                    'tribunales':is_tribunal(aspirante),
                     'Error':Error,'Success':Success
                 })
             else:
@@ -456,10 +472,10 @@ class Tribunal(View):
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             if is_tribunal(aspirante):            
                 # Obtenemos todas las solicitudes ordenadas por fecha descendente (más recientes primero)
-                tribunales = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id')
+                tribunales = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id').distinct()
                 tribunales = RRHH_models.Tribunal.objects.filter(id__in=tribunales).values_list('solicitud_id')
-                solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=tribunales).order_by('-fecha_solicitud')
-                
+                solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=tribunales,estado='En revisión').order_by('-fecha_solicitud')
+                print(solicitudes)
                 # Definimos los estados posibles
                 ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
                 
@@ -474,7 +490,7 @@ class Tribunal(View):
                     "solicitudes_por_estado": solicitudes_por_estado,
                     "ESTADOS": ESTADOS,
                     "categoria_actual": aspirante.categoria_docente,
-                    'tribunales':RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante),
+                    'tribunales':is_tribunal(aspirante),
                 })
             else:
                 return AspiranteDashboardView.Notificacion(request=request,Error="No eres miembro de ningún tribunal.")    
