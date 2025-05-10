@@ -28,8 +28,8 @@
                     <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Término de búsqueda: '{{termino_busqueda}}'</p>
                 {% endif %}
                 <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
-                    {% if aspirantes %}
-                        {{ aspirantes|length }} resultado{% if aspirantes|length > 1 %}s{% endif %}
+                    {% if aspirantes.exists %}
+                        {{ aspirantes.count }} resultado{% if aspirantes.count > 1 %}s{% endif %}
                     {% else %}
                         0 resultados
                     {% endif %}
@@ -80,7 +80,7 @@
                                     </span>
                                 </div>
                                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    CI: {{ aspirante.ci }} | {{ aspirante.sexo }} | {{ aspirante.color_piel }} | {{ aspirante.estado_civil }}
+                                    CI: {{ aspirante.ci }} | {{ aspirante.sexo }} | {{ aspirante.color_piel }} | {{ aspirante.estado_civil }} | {{aspirante.userid.email}} | {{aspirante.userid}}
                                 </p>
                                 <!-- Destacar coincidencias de búsqueda -->
                             </div>

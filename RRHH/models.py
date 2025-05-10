@@ -6,7 +6,10 @@ CARGOS_CHOICES = ['Presidente','Suplente','Secretario']
 
 class Tribunal(models.Model):
     solicitud_id = models.OneToOneField(Aspirante_models.SolicitudCambioCategoria,on_delete=models.CASCADE,related_name='tribunal')
-
+    @property
+    def presidente(self):
+        return self.miembros.filter(cargo="Presidente").first()
+    
 class Miembro_tribunal(models.Model):
     miembro = models.ForeignKey(Admin_models.Aspirante,on_delete=models.CASCADE,related_name='miembros_tribunales')
     tribunal_id = models.ForeignKey(Tribunal,on_delete=models.CASCADE,related_name='miembros')
