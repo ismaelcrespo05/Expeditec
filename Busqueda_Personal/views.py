@@ -63,7 +63,7 @@ class Busqueda_Personal(View):
         
     
 
-
+from Aspirante import views as Aspirante_views
 class Expedientes_Personal(View):
     TIPOS_DOCUMENTOS = Aspirante_models.TIPOS_DOCUMENTOS
     def get(self,request:HttpRequest):
@@ -81,14 +81,25 @@ class Expedientes_Personal(View):
     
     def post(self,request:HttpRequest):
         rrhh = None
+
         try:
             rrhh = Admin_models.RRHH.objects.get(userid=request.user)
         except Exception as e:
             pass
 
-        if not request.user.is_staff and not rrhh:
-            return Login_views.redirigir_usuario(request=request)
-        else:
+        aspirante=None
+        is_tribunal = None
+        Tribunales = False
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            is_tribunal = Aspirante_views.is_tribunal(aspirante)
+            if is_tribunal:
+                Tribunales = True
+        except Exception as e:
+            pass
+
+
+        if rrhh or request.user.is_staff  or Tribunales:
             aspirante_id = request.POST.get('aspirante_id')
 
             aspirante = Admin_models.Aspirante.objects.get(id=aspirante_id)
@@ -149,6 +160,9 @@ class Expedientes_Personal(View):
             context = {
                 'base':Config_views.get_base(request=request),
                 'rrhh':rrhh,
+                'aspirante': aspirante,
+                'tribunales':is_tribunal,
+                "Tribunales": True,
                 'datos_personales': datos_personales,
                 'datos_academicos': datos_academicos,
                 'datos_laborales': datos_laborales,
@@ -159,4 +173,6 @@ class Expedientes_Personal(View):
                 'aspirante': aspirante_id
             }
             return render(request, 'Expediente/expediente.html', context=context)
-            
+        else:
+            return Login_views.redirigir_usuario(request=request)
+        

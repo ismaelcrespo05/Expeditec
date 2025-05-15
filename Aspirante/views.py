@@ -440,10 +440,9 @@ class Tribunal(View):
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             if is_tribunal(aspirante):            
                 # Obtenemos todas las solicitudes ordenadas por fecha descendente (más recientes primero)
-                tribunales = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id')
+                tribunales = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id').distinct()
                 tribunales = RRHH_models.Tribunal.objects.filter(id__in=tribunales).values_list('solicitud_id')
-                solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=tribunales).order_by('-fecha_solicitud')
-                
+                solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=tribunales,estado='En revisión').order_by('-fecha_solicitud')
                 # Definimos los estados posibles
                 ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
                 
@@ -466,7 +465,6 @@ class Tribunal(View):
             print(e)
         return Login_views.redirigir_usuario(request)
 
-
     def get(self,request):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
@@ -475,7 +473,6 @@ class Tribunal(View):
                 tribunales = RRHH_models.Miembro_tribunal.objects.filter(miembro=aspirante).values_list('tribunal_id').distinct()
                 tribunales = RRHH_models.Tribunal.objects.filter(id__in=tribunales).values_list('solicitud_id')
                 solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(id__in=tribunales,estado='En revisión').order_by('-fecha_solicitud')
-                print(solicitudes)
                 # Definimos los estados posibles
                 ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
                 
@@ -484,7 +481,6 @@ class Tribunal(View):
                     estado: solicitudes.filter(estado=estado) 
                     for estado in ESTADOS
                 }
-                
                 return render(request,'Tribunal/tribunal.html', {
                     "Tribunales": True,
                     "solicitudes_por_estado": solicitudes_por_estado,
@@ -539,8 +535,148 @@ class Tribunal(View):
             solicitud_id=solicitud,
             archivo = archivo,
             descripcion=descripcion,
+            miembro=miembro
         )
         acta.save()
         return Tribunal.Notificacion(request=request,Success="El acta se ha publicado con éxito.")
+
+        
+    
+
+
+class Aprobar_solicitud(View):
+    def get(self,request):
+        pass
+
+    def post(self,request):
+        pass
+
+
+
+class Rechazar_solicitud(View):
+    def get(self, request):
+        return Tribunal.Notificacion(request=request)
+    
+    def post(self, request:HttpRequest):
+        aspirante = None
+        tribunal=None
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            tribunal = is_tribunal(aspirante=aspirante)
+        except Exception as e:
+            print(e)
+            pass
+        
+        if not tribunal:
+            return Login_views.redirigir_usuario(request=request)
+        
+        solicitud_id = None
+        try:
+            solicitud_id = request.POST.get('solicitud_id')
+            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id)
+        except Exception as e:
+            print(e)
+            return Tribunal.Notificacion(request=request, Error="Solicitud no encontrada")
+        try:
+            tribunal = RRHH_models.Tribunal.objects.get(solicitud_id=solicitud)
+            presidente = RRHH_models.Miembro_tribunal.objects.get(tribunal_id=tribunal,miembro=aspirante,cargo="Presidente")
+            solicitud.estado = 'Rechazada'
+            if not request.POST.get('observaciones') in [None, '']:
+                solicitud.observaciones = request.POST.get('observaciones')
+            solicitud.save()
+            return AspiranteDashboardView.Notificacion(request=request, Success="Solicitud rechazada correctamente")
+        except Exception as e:
+            print(e)
+            return Tribunal.Notificacion(request=request, Error="Acceso denegado.")
+
+
+
+class Aprobar_solicitud(View):
+    def get(self, request):
+        return Tribunal.Notificacion(request=request)
+    
+    def post(self, request:HttpRequest):
+        aspirante = None
+        tribunal=None
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            tribunal = is_tribunal(aspirante=aspirante)
+        except Exception as e:
+            print(e)
+            pass
+        
+        if not tribunal:
+            return Login_views.redirigir_usuario(request=request)
+        
+        solicitud_id = None
+        try:
+            solicitud_id = request.POST.get('solicitud_id')
+            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id)
+        except Exception as e:
+            print(e)
+            return Tribunal.Notificacion(request=request, Error="Solicitud no encontrada")
+        try:
+            tribunal = RRHH_models.Tribunal.objects.get(solicitud_id=solicitud)
+            presidente = RRHH_models.Miembro_tribunal.objects.get(tribunal_id=tribunal,miembro=aspirante,cargo="Presidente")
+            solicitud.estado = 'Aprobada'
+            if not request.POST.get('observaciones') in [None, '']:
+                solicitud.observaciones = request.POST.get('observaciones')
+
+            solicitud.aspirante.categoria_docente = solicitud.categoria_solicitada
+            solicitud.aspirante.save()
+            solicitud.save()
+            return AspiranteDashboardView.Notificacion(request=request, Success="Solicitud aprobada correctamente")
+        except Exception as e:
+            print(e)
+            return Tribunal.Notificacion(request=request, Error="Acceso denegado.")
+
+
+
+
+class Eliminar_acta_tribunal(View):
+    def get(self,request:HttpRequest):
+        return Tribunal.Notificacion(request=request)
+
+    def post(self, request:HttpRequest):
+        aspirante = None
+        tribunal=None
+        miembro = None
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            tribunal = is_tribunal(aspirante=aspirante)
+
+        except Exception as e:
+            print(e)
+            pass
+        
+        if not tribunal:
+            return Login_views.redirigir_usuario(request=request)
+        
+
+
+
+        acta = None
+        try:
+            acta_id = request.POST.get('acta_id')
+            acta = Aspirante_models.Actas_Tribunal.objects.get(id=acta_id)
+        except Exception as e:
+            return Tribunal.Notificacion(request=request, Error="Acta no encontrada")
+        
+        try:
+            tribunal = RRHH_models.Tribunal.objects.get(solicitud_id=acta.solicitud_id)
+        except Exception as e:
+            print(e)
+            return Tribunal.Notificacion(request=request,Error="Tribunal no registrado.")
+
+        try:
+            miembro = RRHH_models.Miembro_tribunal.objects.get(miembro=aspirante,tribunal_id=tribunal)
+            if miembro.cargo == "Presidente" or acta.miembro.id == miembro.id:
+                acta.delete()
+                return Tribunal.Notificacion(request=request,Success="Acta eliminada correctamente.")
+            else:
+                return Tribunal.Notificacion(request=request,Error="Usted no esta autorizado a eliminar esta acta.")
+        except Exception as e:
+            print(e)
+            return Tribunal.Notificacion(request=request,Error="Usted no es miembro de este tribunal.")        
 
         

@@ -76,11 +76,15 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
 def actas_upload_to(instance, filename):
     return f'actas_tribunal/{instance.solicitud_id.id}/{filename}'
 
+from RRHH import models as RRHH_models
 class Actas_Tribunal(models.Model):
     solicitud_id = models.ForeignKey(SolicitudCambioCategoria,on_delete=models.CASCADE)
     archivo = models.FileField(upload_to=actas_upload_to)
+    miembro = models.ForeignKey(RRHH_models.Miembro_tribunal,on_delete=models.SET_NULL,null=True,related_name='actas_tribunal')
     descripcion = models.TextField(null=False, blank=True)
     fecha_subida = models.DateTimeField(auto_now_add=True)
+
+
 
 @receiver(post_delete, sender=Actas_Tribunal)
 def auto_delete_file_on_delete(sender, instance, **kwargs):

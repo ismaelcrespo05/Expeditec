@@ -11,5 +11,8 @@ urlpatterns = [
     path('cambio_categoria/',views.Cambio_Categoria.as_view(),name="cambio_categoria"),
     path('nueva_solicitud/',views.Generar_Solicitud.as_view(),name="nueva_solicitud"),
     path('eliminar_solicitud/',views.Eliminar_Solicitud,name="eliminar_solicitud"),
-    path('tribunales/',views.Tribunal.as_view(),name='tribunales')
+    path('tribunales/',views.Tribunal.as_view(),name='tribunales'),
+    path('aprobar',views.Aprobar_solicitud.as_view(),name="aprobar"),
+    path('rechazar/',views.Rechazar_solicitud.as_view(),name="rechazar"),
+    path('eliminar_acta/',views.Eliminar_acta_tribunal.as_view(),name="eliminar_acta")
 ]
