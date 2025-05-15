@@ -129,6 +129,11 @@
                                                                 </a>
                                                             </p>
                                                             <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                                                
+                                                                {% if acta.miembro %}
+                                                                    <span>Subida por: {{acta.miembro.miembro}}</span>
+                                                                    <span class="mx-2">•</span>
+                                                                {% endif %}
                                                                 <span>{{ acta.fecha_subida|date:"d/m/Y H:i" }}</span>
                                                                 {% if acta.descripcion %}
                                                                 <span class="mx-2">•</span>
@@ -137,12 +142,22 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <a href="{{ acta.archivo.url }}" download 
-                                                       class="ml-3 flex-shrink-0 p-1 rounded-full text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-gray-600">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                        </svg>
-                                                    </a>
+                                                    <div class="flex items-center space-x-2">
+                                                        <a href="{{ acta.archivo.url }}" download 
+                                                        class="flex-shrink-0 p-1 rounded-full text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-gray-600">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                            </svg>
+                                                        </a>
+                                                        {% if acta.miembro.miembro.userid == request.user or solicitud.tribunal.presidente.miembro.userid == request.user %}
+                                                        <button onclick="openDeleteActaModal('{{ acta.id }}')" 
+                                                                class="flex-shrink-0 p-1 rounded-full text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-gray-600">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
                                                 </div>
                                                 {% endfor %}
                                             </div>
@@ -155,44 +170,110 @@
                                             </div>
                                         {% endif %}
                                     {% endwith %}
-                                </div>
-                                
-                                <!-- Botones de acción -->
-                                <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <div class="flex flex-wrap justify-end gap-2">
-                                        {% for miembro in solicitud.tribunal.miembros.all %}
-                                            {% if miembro.miembro.userid == request.user and miembro.cargo == 'Presidente' and solicitud.actas_tribunal_set.all %}
-                                                <button onclick="openDecisionModal('{{ solicitud.id }}', 'Aprobada')" 
-                                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-green-700 dark:hover:bg-green-600 transition duration-150">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+
+                                    <!-- Modal para confirmar eliminación de acta -->
+                                    <div id="deleteActaModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+                                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300">
+                                            <div class="flex justify-between items-start mb-4">
+                                                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                                     </svg>
-                                                    Aprobar
-                                                </button>
-                                                <button onclick="openDecisionModal('{{ solicitud.id }}', 'Rechazada')" 
-                                                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-600 transition duration-150">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    Confirmar Eliminación
+                                                </h3>
+                                                <button onclick="closeDeleteActaModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
-                                                    Rechazar
                                                 </button>
-                                            {% endif %}
-                                        {% endfor %}
-                                        <form action="{% url 'expediente_personal' %}" method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="aspirante_id" value="{{solicitud.aspirante.id}}">
-                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                                Ver detalles
-                                            </a>
-                                        </form>
-                                        <a href="" 
-                                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-700 dark:hover:bg-indigo-600 transition duration-150">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                            </svg>
-                                            Chat
-                                        </a>
+                                            </div>
+                                            
+                                            <form id="deleteActaForm" method="post" action="{% url 'eliminar_acta' %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" id="acta_id" name="acta_id">
+                                                
+                                                <div class="mb-6">
+                                                    <p class="text-gray-600 dark:text-gray-300">
+                                                        ¿Está seguro que desea eliminar este acta? Esta acción no se puede deshacer.
+                                                    </p>
+                                                </div>
+                                                
+                                                <div class="flex justify-end space-x-3">
+                                                    <button type="button" onclick="closeDeleteActaModal()"
+                                                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                                                        Cancelar
+                                                    </button>
+                                                    <button type="submit"
+                                                        class="px-4 py-2 bg-red-600 dark:bg-red-700 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 shadow-md">
+                                                        Eliminar Acta
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
+
+                                    <script>
+                                        // Funciones para el modal de eliminar acta
+                                        function openDeleteActaModal(actaId) {
+                                            document.getElementById('acta_id').value = actaId;
+                                            document.getElementById('deleteActaModal').classList.remove('hidden');
+                                        }
+
+                                        function closeDeleteActaModal() {
+                                            document.getElementById('deleteActaModal').classList.add('hidden');
+                                        }
+
+                                        // Actualizar la función window.onclick para incluir el nuevo modal
+                                        window.onclick = function(event) {
+                                            const uploadModal = document.getElementById('uploadActaModal');
+                                            const decisionModal = document.getElementById('decisionModal');
+                                            const deleteModal = document.getElementById('deleteActaModal');
+                                            
+                                            if (event.target == uploadModal) {
+                                                closeUploadActaModal();
+                                            }
+                                            if (event.target == decisionModal) {
+                                                closeDecisionModal();
+                                            }
+                                            if (event.target == deleteModal) {
+                                                closeDeleteActaModal();
+                                            }
+                                        }
+                                    </script>
+                                </div>
+                                <div class="mt-4 flex justify-end space-x-2">
+                                    <a href="" 
+                                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-700 dark:hover:bg-indigo-600 transition duration-150">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                        Chat
+                                    </a>
+                                    {% for miembro in solicitud.tribunal.miembros.all %}
+                                        {% if miembro.miembro.userid == request.user and miembro.cargo == 'Presidente' and solicitud.actas_tribunal_set.all %}
+                                            <button onclick="setFormActionAndOpenModal('{{ solicitud.id }}', 'Aprobada', '{% url 'aprobar' %}')" 
+                                                class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-green-700 dark:hover:bg-green-600 transition duration-150">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                Aprobar
+                                            </button>
+                                            <button onclick="setFormActionAndOpenModal('{{ solicitud.id }}', 'Rechazada', '{% url 'rechazar' %}')" 
+                                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-600 transition duration-150">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                                Rechazar
+                                            </button>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <form action="{% url 'expediente_personal' %}" method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="aspirante_id" value="{{solicitud.aspirante.id}}">
+                                        <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            Ver detalles
+                                        </a>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -279,7 +360,6 @@
         <form id="decisionForm" method="post" action="">
             {% csrf_token %}
             <input type="hidden" id="decision_solicitud_id" name="solicitud_id">
-            <input type="hidden" id="decision_estado" name="estado">
             
             <div class="mb-4">
                 <div id="decisionIcon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-3">
@@ -308,8 +388,6 @@
     </div>
 </div>
 
-
-
 <script>
     // Funciones para el modal de subir actas
     function openUploadActaModal(solicitudId) {
@@ -322,10 +400,13 @@
         document.getElementById('uploadActaForm').reset();
     }
 
-    // Funciones para el modal de decisión (aprobación/rechazo)
-    function openDecisionModal(solicitudId, decision) {
+    // Función para establecer la acción del formulario y abrir el modal
+    function setFormActionAndOpenModal(solicitudId, decision, actionUrl) {
+        // Establecer la acción del formulario
+        document.getElementById('decisionForm').action = actionUrl;
+        
+        // Configurar el modal según la decisión
         document.getElementById('decision_solicitud_id').value = solicitudId;
-        document.getElementById('decision_estado').value = decision;
         
         const modal = document.getElementById('decisionModal');
         const icon = document.getElementById('decisionIcon');
@@ -342,7 +423,7 @@
             title.textContent = 'Aprobar Solicitud';
             text.textContent = '¿Está seguro que desea aprobar esta solicitud de cambio de categoría?';
             submitBtn.textContent = 'Aprobar';
-            submitBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'focus:ring-green-500');
+            submitBtn.className = 'px-4 py-2 rounded-lg text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-150 shadow-md bg-green-600 hover:bg-green-700 focus:ring-green-500';
             observacionesContainer.classList.add('hidden');
         } else {
             // Configuración para rechazo
@@ -352,7 +433,7 @@
             title.textContent = 'Rechazar Solicitud';
             text.textContent = '¿Está seguro que desea rechazar esta solicitud de cambio de categoría?';
             submitBtn.textContent = 'Rechazar';
-            submitBtn.classList.add('bg-red-600', 'hover:bg-red-700', 'focus:ring-red-500');
+            submitBtn.className = 'px-4 py-2 rounded-lg text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-150 shadow-md bg-red-600 hover:bg-red-700 focus:ring-red-500';
             observacionesContainer.classList.remove('hidden');
         }
         
@@ -362,27 +443,6 @@
     function closeDecisionModal() {
         document.getElementById('decisionModal').classList.add('hidden');
         document.getElementById('decisionForm').reset();
-    }
-
-    // Funciones para el modal de pasar a revisión
-    function openReviewConfirmationModal(solicitudId) {
-        document.getElementById('reviewSolicitudId').value = solicitudId;
-        document.getElementById('reviewConfirmationModal').classList.remove('hidden');
-    }
-
-    function closeReviewConfirmationModal() {
-        document.getElementById('reviewConfirmationModal').classList.add('hidden');
-    }
-
-    // Funciones para el modal de eliminar miembro
-    function openRemoveTribunalModal(solicitudId, memberId) {
-        document.getElementById('removeSolicitudId').value = solicitudId;
-        document.getElementById('removeMemberId').value = memberId;
-        document.getElementById('removeTribunalModal').classList.remove('hidden');
-    }
-
-    function closeRemoveTribunalModal() {
-        document.getElementById('removeTribunalModal').classList.add('hidden');
     }
 
     // Mostrar nombre de archivo al seleccionar
@@ -401,20 +461,12 @@
     window.onclick = function(event) {
         const uploadModal = document.getElementById('uploadActaModal');
         const decisionModal = document.getElementById('decisionModal');
-        const reviewModal = document.getElementById('reviewConfirmationModal');
-        const removeModal = document.getElementById('removeTribunalModal');
         
         if (event.target == uploadModal) {
             closeUploadActaModal();
         }
         if (event.target == decisionModal) {
             closeDecisionModal();
-        }
-        if (event.target == reviewModal) {
-            closeReviewConfirmationModal();
-        }
-        if (event.target == removeModal) {
-            closeRemoveTribunalModal();
         }
     }
 </script>

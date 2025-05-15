@@ -88,41 +88,6 @@ class Solicitudes(View):
             ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
             CATEGORIAS = ['ATD Medio Superior', 'ATD Superior', 'Instructor', 'Asistente', 'Auxiliar', 'Titular']
             
-            filtros = {
-                'estado': request.POST.get('estado'),
-                'categoria': request.POST.get('categoria'),
-                'fecha_inicio': request.POST.get('fecha_inicio'),
-                'fecha_fin': request.POST.get('fecha_fin'),
-                'busqueda': request.POST.get('busqueda')
-            }
-
-            if filtros['estado'] and filtros['estado'] != 'Todos':
-                solicitudes = solicitudes.filter(estado=filtros['estado'])
-            
-            if filtros['categoria'] and filtros['categoria'] != 'Todas':
-                solicitudes = solicitudes.filter(categoria_solicitada=filtros['categoria'])
-            
-            if filtros['fecha_inicio']:
-                try:
-                    fecha_inicio = datetime.strptime(filtros['fecha_inicio'], '%Y-%m-%d').date()
-                    solicitudes = solicitudes.filter(fecha_solicitud__date__gte=fecha_inicio)
-                except (ValueError, TypeError):
-                    pass
-            
-            if filtros['fecha_fin']:
-                try:
-                    fecha_fin = datetime.strptime(filtros['fecha_fin'], '%Y-%m-%d').date()
-                    solicitudes = solicitudes.filter(fecha_solicitud__date__lte=fecha_fin)
-                except (ValueError, TypeError):
-                    pass
-            
-            if filtros['busqueda']:
-                solicitudes = solicitudes.filter(
-                    Q(aspirante__user__first_name__icontains=filtros['busqueda']) |
-                    Q(aspirante__user__last_name__icontains=filtros['busqueda']) |
-                    Q(observaciones__icontains=filtros['busqueda'])
-                )
-
             solicitudes_por_estado = {
                 estado: solicitudes.filter(estado=estado) 
                 for estado in ESTADOS
@@ -136,7 +101,6 @@ class Solicitudes(View):
                 "solicitudes_por_estado": solicitudes_por_estado,
                 "estados_filtro": ESTADOS,
                 "categorias_filtro": CATEGORIAS,
-                "filtros_aplicados": filtros,
                 "total_solicitudes": total_solicitudes,
                 "puede_solicitar": not tiene_solicitudes_activas,
                 'rrhh': rrhh,
@@ -148,11 +112,14 @@ class Solicitudes(View):
             print(e)
             return Login_views.redirigir_usuario(request=request)
 
+
+
+
 class Rechazar_Solicitud(View):
     def get(self, request):
         return Solicitudes.Notificacion(request=request)
     
-    def post(self, request):
+    def post(self, request:HttpRequest):
         rrhh = None
         solicitud_id = None
         try:
@@ -162,7 +129,7 @@ class Rechazar_Solicitud(View):
         
         try:
             solicitud_id = request.POST.get('solicitud_id')
-            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id)
+            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id,estado="Pendiente")
             solicitud.estado = 'Rechazada'
             if not request.POST.get('observaciones') in [None, '']:
                 solicitud.observaciones = request.POST.get('observaciones')
@@ -170,6 +137,9 @@ class Rechazar_Solicitud(View):
             return Solicitudes.Notificacion(request=request, Success="Solicitud rechazada con éxito")
         except Exception as e:
             return Solicitudes.Notificacion(request=request, Error="Solicitud no encontrada")
+
+
+
 
 def filtrar_solicitudes(request: HttpRequest):
     if not request.method == 'POST':
@@ -242,6 +212,8 @@ def filtrar_solicitudes(request: HttpRequest):
         'CARGOS_CHOICES': RRHH_models.CARGOS_CHOICES,
     }
     return render(request, 'RRHH/solicitudes.html', context)
+
+
 
 
 
