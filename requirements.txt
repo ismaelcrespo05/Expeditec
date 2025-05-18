@@ -6,3 +6,8 @@ django-user-agents
 pyyaml 
 regex
 pandas
+channels
+channels-redis
+redis
+uvicorn
+whitenoise

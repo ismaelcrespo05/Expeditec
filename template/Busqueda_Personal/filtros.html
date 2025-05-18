@@ -1,0 +1,240 @@
+{% extends base %}
+{% load static %}
+{% block contenido %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Resultados de Búsqueda</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {% if query %}
+                    Búsqueda: "{{ query }}"
+                {% else %}
+                    Ingrese un término de búsqueda
+                {% endif %}
+            </p>
+        </div>
+        <div class="hidden sm:flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days-icon lucide-calendar-days"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> 
+            <span id="current-date"></span>
+        </div>
+    </div>
+
+    <!-- Sección de Filtros Mejorada -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6">
+            <form id="filter-form" method="POST" class="space-y-6">
+                {% csrf_token %}
+                <div class="flex items-center justify-between mb-9">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Filtros Avanzados</h2>
+                    <div class="flex space-x-3">
+                        <a href="{% url 'aplicar_filtro' %}"><button type="button" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600 transition-colors duration-150">
+                            Limpiar Filtros
+                        </button></a>
+                        <button type="submit" form="filter-form" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150">
+                            Aplicar Filtros
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Grupo 1: Información Básica -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                            Información Básica
+                        </h3>
+                        <div>
+                            <label for="nombres" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombres</label>
+                            <input type="text" id="nombres" name="nombres" value="{{ request.GET.nombres }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-600 px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="primer_apellido" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Primer Apellido</label>
+                            <input type="text" id="primer_apellido" name="primer_apellido" value="{{ request.GET.primer_apellido }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="segundo_apellido" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Segundo Apellido</label>
+                            <input type="text" id="segundo_apellido" name="segundo_apellido" value="{{ request.GET.segundo_apellido }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="ci" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Carné de Identidad</label>
+                            <input type="text" id="ci" name="ci" value="{{ request.GET.ci }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="tipo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
+                            <select id="tipo" name="tipo" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todos</option>
+                                {% for choice in TIPO_CHOICES %}
+                                    <option value="{{ choice }}" {% if request.GET.tipo == choice %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Grupo 2: Datos Personales -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Datos Personales</h3>
+                        
+                        <div>
+                            <label for="sexo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sexo</label>
+                            <select id="sexo" name="sexo" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todos</option>
+                                {% for choice in SEXO_CHOICES %}
+                                    <option value="{{ choice }}" {% if request.GET.sexo == choice %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="lugar_nacimiento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lugar de Nacimiento</label>
+                            <input type="text" id="lugar_nacimiento" name="lugar_nacimiento" value="{{ request.GET.lugar_nacimiento }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="color_piel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color de Piel</label>
+                            <select id="color_piel" name="color_piel" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todos</option>
+                                {% for choice in COLOR_PIEL_CHOICES %}
+                                    <option value="{{ choice }}" {% if request.GET.color_piel == choice %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="estado_civil" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado Civil</label>
+                            <select id="estado_civil" name="estado_civil" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todos</option>
+                                {% for choice in ESTADO_CIVIL_CHOICES %}
+                                    <option value="{{ choice }}" {% if request.GET.estado_civil == choice %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="ciudadano" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ciudadano</label>
+                            <input type="text" id="ciudadano" name="ciudadano" value="{{ request.GET.ciudadano }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+                    </div>
+
+                    <!-- Grupo 3: Datos Laborales -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Datos Laborales</h3>
+                        
+                        <div>
+                            <label for="centro" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Centro</label>
+                            <input type="text" id="centro" name="centro" value="{{ request.GET.centro }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="cargo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
+                            <input type="text" id="cargo" name="cargo" value="{{ request.GET.cargo }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="facultad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Facultad</label>
+                            <select id="facultad" name="facultad" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todas</option>
+                                {% for facultad in facultades %}
+                                    <option value="{{ facultad }}" {% if request.GET.facultad == facultad %}selected{% endif %}>{{ facultad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="departamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento</label>
+                            <input type="text" id="departamento" name="departamento" value="{{ request.GET.departamento }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="salario_min" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Salario (Mín)</label>
+                            <input type="number" id="salario_min" name="salario_min" value="{{ request.GET.salario_min }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="salario_max" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Salario (Máx)</label>
+                            <input type="number" id="salario_max" name="salario_max" value="{{ request.GET.salario_max }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+                    </div>
+
+                    <!-- Grupo 4: Información Académica -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Información Académica</h3>
+                        
+                        <div>
+                            <label for="categoria_docente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoría Docente</label>
+                            <select id="categoria_docente" name="categoria_docente" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todas</option>
+                                {% for choice in CATEGORIA_DOCENTE_CHOICES %}
+                                    <option value="{{ choice }}" {% if request.GET.categoria_docente == choice %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="grado_cientifico" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grado Científico</label>
+                            <select id="grado_cientifico" name="grado_cientifico" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todos</option>
+                                {% for choice in GRADO_CIENTIFICO_CHOICES %}
+                                    <option value="{{ choice }}" {% if request.GET.grado_cientifico == choice %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="especialidad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Especialidad</label>
+                            <input type="text" id="especialidad" name="especialidad" value="{{ request.GET.especialidad }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="solapin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solapín</label>
+                            <input type="text" id="solapin" name="solapin" value="{{ request.GET.solapin }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+                    </div>
+
+                    <!-- Grupo 5: Otros Datos -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">Otros Datos</h3>
+                        
+                        <div>
+                            <label for="procedencia_social" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Procedencia Social</label>
+                            <select id="procedencia_social" name="procedencia_social" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                                <option value="">Todas</option>
+                                {% for choice in PROCEDENCIA_SOCIAL_CHOICES %}
+                                    <option value="{{ choice }}" {% if request.GET.procedencia_social == choice %}selected{% endif %}>{{ choice }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="pais" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">País</label>
+                            <input type="text" id="pais" name="pais" value="{{ request.GET.pais }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="telefono" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                            <input type="text" id="telefono" name="telefono" value="{{ request.GET.telefono }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+
+                        <div>
+                            <label for="direccion" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
+                            <input type="text" id="direccion" name="direccion" value="{{ request.GET.direccion }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Mostrar fecha actual
+    document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+</script>
+{% endblock %}
