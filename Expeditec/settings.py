@@ -44,7 +44,9 @@ INSTALLED_APPS = [
     'Configuracion',
     'verificacion_email',
     'Aspirante',
-    'RRHH'
+    'RRHH',
+    'Chat',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -58,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_user_agents.middleware.UserAgentMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'Expeditec.urls'
@@ -148,3 +151,26 @@ SESSION_TIMEOUT_REDIRECT = ''
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
+
+
+#Configuracion para el chat
+ASGI_APPLICATION = 'Expeditec.asgi.application'
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+        # No necesitas configurar HOSTS/PORTS
+    }
+}
+
+
+#Redis recomendado para modo produccion
+#CHANNEL_LAYERS = {
+#    "default": {
+#        "BACKEND": "channels_redis.core.RedisChannelLayer",
+#        "CONFIG": {
+#            "hosts": [("127.0.0.1", 6379)],
+#        },
+#    },
+#}

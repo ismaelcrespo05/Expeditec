@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout
 from django_user_agents.utils import get_user_agent
 from django.utils import timezone
 from django.conf import settings
-from django.http import HttpRequest
+from django.http import HttpRequest,HttpResponse, JsonResponse
 from django.views import View
 from django.utils.html import escape
 from Administrador import models as Admin_models
