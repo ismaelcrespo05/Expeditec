@@ -4,6 +4,7 @@ from Login import views as Login_views
 from django.views import View
 from . import models as Aspirante_models
 from django.http import HttpRequest
+from Chat import models as Chat_models
 class AspiranteDashboardView(View):
     @staticmethod
     def get_contexto(aspirante):
@@ -270,7 +271,7 @@ class Cambio_Categoria(View):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             
-            # Obtenemos todas las solicitudes ordenadas por fecha descendente (más recientes primero)
+            # Obtenemos todas las solicitudes ordenadas por fecha descendente
             solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(
                 aspirante=aspirante
             ).order_by('-fecha_solicitud')
@@ -284,31 +285,49 @@ class Cambio_Categoria(View):
                 for estado in ESTADOS
             }
             
+            # Calculamos el total de solicitudes
+            total_solicitudes = solicitudes.count()
+            
             # Verificamos si puede solicitar (no tiene solicitudes pendientes o en revisión)
-            tiene_solicitudes_activas = solicitudes.filter(
+            puede_solicitar = not solicitudes.filter(
                 estado__in=['Pendiente', 'En revisión']
             ).exists()
+            if aspirante.categoria_docente == 'Titular':
+                puede_solicitar = False
             
-            # Obtener las categorías disponibles (excluyendo "Ninguna" y la actual)
-            categorias_disponibles = [
-                cat for cat in Admin_models.CATEGORIA_DOCENTE_CHOICES 
-                if cat != 'Ninguna' and cat != aspirante.categoria_docente
-            ]
 
+            # Definimos el orden de las categorías
+            orden_categorias = Admin_models.CATEGORIA_DOCENTE_CHOICES
+
+            # Obtenemos el índice de la categoría actual del aspirante
+            try:
+                indice_actual = orden_categorias.index(aspirante.categoria_docente)
+            except ValueError:
+                indice_actual = -1
+
+            # Calculamos la categoría siguiente si existe
+            categorias_disponibles = []
+            if indice_actual >= 0 and indice_actual + 1 < len(orden_categorias):
+                siguiente_categoria = orden_categorias[indice_actual + 1]
+                if siguiente_categoria != 'Titular' or aspirante.categoria_docente != 'Titular':
+                    categorias_disponibles = [siguiente_categoria]
+            
+            print(categorias_disponibles)
             return render(request, 'Aspirante/cambio_categoria.html', {
                 "Cambio_categoria": True,
                 "solicitudes_por_estado": solicitudes_por_estado,
                 "ESTADOS": ESTADOS,
-                "puede_solicitar": not tiene_solicitudes_activas,
+                "puede_solicitar": puede_solicitar,
                 "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
                 "categoria_actual": aspirante.categoria_docente,
-                'Error':Error,'Success':Success,
+                "total_solicitudes": total_solicitudes,  # Nuevo campo añadido
                 'tribunales':is_tribunal(aspirante),
+                'Error':Error,'Success':Success
             })
             
         except Admin_models.Aspirante.DoesNotExist:
             return Login_views.redirigir_usuario(request)
-
+        
     def get(self, request):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
@@ -331,21 +350,35 @@ class Cambio_Categoria(View):
             total_solicitudes = solicitudes.count()
             
             # Verificamos si puede solicitar (no tiene solicitudes pendientes o en revisión)
-            tiene_solicitudes_activas = solicitudes.filter(
+            puede_solicitar = not solicitudes.filter(
                 estado__in=['Pendiente', 'En revisión']
             ).exists()
+            if aspirante.categoria_docente == 'Titular':
+                puede_solicitar = False
             
-            # Obtener las categorías disponibles (excluyendo "Ninguna" y la actual)
-            categorias_disponibles = [
-                cat for cat in Admin_models.CATEGORIA_DOCENTE_CHOICES 
-                if cat != 'Ninguna' and cat != aspirante.categoria_docente
-            ]
+
+            # Definimos el orden de las categorías
+            orden_categorias = Admin_models.CATEGORIA_DOCENTE_CHOICES
+
+            # Obtenemos el índice de la categoría actual del aspirante
+            try:
+                indice_actual = orden_categorias.index(aspirante.categoria_docente)
+            except ValueError:
+                indice_actual = -1
+
+            # Calculamos la categoría siguiente si existe
+            categorias_disponibles = []
+            if indice_actual >= 0 and indice_actual + 1 < len(orden_categorias):
+                siguiente_categoria = orden_categorias[indice_actual + 1]
+                if siguiente_categoria != 'Titular' or aspirante.categoria_docente != 'Titular':
+                    categorias_disponibles = [siguiente_categoria]
+            
             print(categorias_disponibles)
             return render(request, 'Aspirante/cambio_categoria.html', {
                 "Cambio_categoria": True,
                 "solicitudes_por_estado": solicitudes_por_estado,
                 "ESTADOS": ESTADOS,
-                "puede_solicitar": not tiene_solicitudes_activas,
+                "puede_solicitar": puede_solicitar,
                 "CATEGORIA_DOCENTE_CHOICES": categorias_disponibles,
                 "categoria_actual": aspirante.categoria_docente,
                 "total_solicitudes": total_solicitudes,  # Nuevo campo añadido
@@ -354,6 +387,8 @@ class Cambio_Categoria(View):
             
         except Admin_models.Aspirante.DoesNotExist:
             return Login_views.redirigir_usuario(request)
+        
+
     def post(self, request):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
@@ -363,33 +398,81 @@ class Cambio_Categoria(View):
 
 
 class Generar_Solicitud(View):
-    def get(self,request):
+    def get(self,request:HttpRequest):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             return Cambio_Categoria.Notificacion(request)
         except Exception as e:
             return Login_views.redirigir_usuario(request)
     
-    def post(self, request):
+
+    def post(self, request:HttpRequest):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             categoria_solicitada = request.POST.get('categoria_solicitada')
-            if not categoria_solicitada in Admin_models.CATEGORIA_DOCENTE_CHOICES:
-                return Cambio_Categoria.Notificacion(request=request,Error="Categoría docente inválida")
             
-            if not Aspirante_models.SolicitudCambioCategoria.objects.filter(aspirante=aspirante,estado__in=['Pendiente','En revisión']).exists():
-                solicitud = Aspirante_models.SolicitudCambioCategoria.objects.create(
-                    aspirante=aspirante,
-                    categoria_solicitada=categoria_solicitada
+            # Verificar que la categoría solicitada sea válida
+            if not categoria_solicitada in Admin_models.CATEGORIA_DOCENTE_CHOICES:
+                return Cambio_Categoria.Notificacion(request=request, Error="Categoría docente inválida")
+            
+            # Definir el orden de las categorías
+            orden_categorias = Admin_models.CATEGORIA_DOCENTE_CHOICES
+            
+            # Verificar si el aspirante ya es titular
+            if aspirante.categoria_docente == 'Titular':
+                return Cambio_Categoria.Notificacion(
+                    request=request, 
+                    Error="No puede solicitar cambio de categoría porque ya tiene la máxima categoría docente (Titular)"
+                )
+            
+            # Obtener índices de las categorías actual y solicitada
+            try:
+                indice_actual = orden_categorias.index(aspirante.categoria_docente)
+                indice_solicitada = orden_categorias.index(categoria_solicitada)
+            except ValueError:
+                return Cambio_Categoria.Notificacion(request=request, Error="Categoría actual o solicitada no válida")
+            
+            # Validar que la categoría solicitada sea exactamente un nivel superior
+            if indice_solicitada != indice_actual + 1:
+                return Cambio_Categoria.Notificacion(
+                    request=request, 
+                    Error=f"Solo puede solicitar una categoría inmediatamente superior. Su categoría actual es {aspirante.categoria_docente}, puede solicitar {orden_categorias[indice_actual + 1]}"
+                )
+            
+            # Verificar si ya existe una solicitud pendiente o en revisión
+            if Aspirante_models.SolicitudCambioCategoria.objects.filter(aspirante=aspirante, estado__in=['Pendiente','En revisión']).exists():
+                return Cambio_Categoria.Notificacion(request=request, Error="Ya hay una solicitud pendiente o en revisión")
+            
+            # Crear la solicitud si pasa todas las validaciones
+            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.create(
+                aspirante=aspirante,
+                categoria_solicitada=categoria_solicitada
+            )
+            
+            # Crear el chat asociado
+            chat = Chat_models.Chat.objects.create(
+                solicitud_id=solicitud
+            )
+            
+            # Agregar al aspirante al chat
+            Chat_models.Miembro_Chat.objects.create(
+                chat_id=chat, userid=request.user,
+                tipo=aspirante.tipo
+            )
+            
+            # Agregar a todos los RRHH al chat
+            rrhh = Admin_models.RRHH.objects.all()
+            for rh in rrhh:
+                Chat_models.Miembro_Chat.objects.create(
+                    chat_id=chat, userid=rh.userid,
+                    tipo="RRHH"
                 )
                 
-                return Cambio_Categoria.Notificacion(request=request,Success="Solicitud enviada con éxito")
-            else:
-                return Cambio_Categoria.Notificacion(request=request,Error="Ya hay una solicitud pendiente o en resivión")
+            return Cambio_Categoria.Notificacion(request=request, Success="Solicitud enviada con éxito")
+            
         except Exception as e:
             print(e)
-            return Login_views.redirigir_usuario(request)
-        
+            return Login_views.redirigir_usuario(request)    
 
 def Eliminar_Solicitud(request:HttpRequest):
     aspirante = None

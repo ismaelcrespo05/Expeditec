@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.AspiranteDashboardView.as_view(),name='aspirante_dashboard'),
     path('busqueda/',include('Busqueda_Personal.urls')),
     path('configuracion/',include('Configuracion.urls')),
+    path('chat/',include('Chat.urls')),
     path('expediente_docente/',views.ExpedienteDocenteView.as_view(),name="expediente_docente"),
     path('eliminar_documento/',views.Eliminar_ExpedienteDocenteView.as_view(),name="eliminar_documento"),
     path('reemplazar_documento/',views.Update_ExpedienteDocenteView.as_view(),name="reemplazar_documento"),

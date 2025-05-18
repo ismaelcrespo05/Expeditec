@@ -10,7 +10,7 @@ from . import models as Admin_models
 from django.utils import timezone
 from datetime import datetime
 import pandas as pd
-
+from Chat import models as Chat_models
 import regex
 import re
 from . import utils
@@ -87,7 +87,7 @@ class Nuevo_Personal(View):
                 return None
 
         # Creación del usuario
-        userid = User(username=datos['username'], email=datos['email'])
+        userid = User(username=datos['username'], email=datos['email'],tipo_usuario='Aspirante')
         password = utils.generar_contraseña()
         userid.set_password(password)
         userid.save()
@@ -141,7 +141,6 @@ class Nuevo_Personal(View):
                     for campo in request.POST.keys() 
                     if campo != 'csrfmiddlewaretoken'}
             
-            # Convertir fechas de string a date
             validacion = Nuevo_Personal.validar_datos_aspirante(datos=datos)
             if validacion != 'OK':
                 return Personal.Notificacion(request=request, Error=validacion, back=request.POST)
@@ -154,11 +153,12 @@ class Nuevo_Personal(View):
         else:
             return Login_views.redirigir_usuario(request=request)
 
+
+
     @staticmethod
-    def validar_datos_aspirante(datos: dict, update=None):
+    def validar_datos_aspirante(datos: dict, update=None):  # update: instancia de Aspirante para edición
         errores = []
-        
-        # Configuración centralizada basada en el modelo
+
         CONFIG = {
             'campos_obligatorios': [
                 'tipo', 'nombres', 'primer_apellido', 'sexo', 'ci',
@@ -181,8 +181,8 @@ class Nuevo_Personal(View):
                 'grado_cientifico': Admin_models.GRADO_CIENTIFICO_CHOICES + ['', 'Ninguno']
             },
             'validaciones_regex': {
-                'ci': (r'^\d{11}$', "El CI debe tener exactamente 11 dígitos"),
-                'telefono': (r'^(\+53)?[1-8]\d{6,7}$|^(\+53)?5\d{7}$', 
+                'ci': (r'^\d{11}$', "El CI debe tener exactamente 11 dígitos numéricos"),
+                'telefono': (r'^(\+53)?[1-8]\d{6,7}$|^(\+53)?5\d{7}$',
                             "Formato de teléfono inválido. Use +5371234567 o 51234567"),
                 'salario': (r'^\d+(\.\d{1,2})?$', "Formato de salario inválido"),
                 'email': (r'^[\w\.-]+@[\w\.-]+\.\w+$', "Correo electrónico no válido"),
@@ -198,91 +198,118 @@ class Nuevo_Personal(View):
                 'nombres': 100, 'primer_apellido': 100, 'segundo_apellido': 100,
                 'ci': 11, 'lugar_nacimiento': 100, 'especialidad': 100, 'centro': 100,
                 'cargo': 100, 'facultad': 100, 'ces': 100, 'departamento': 100,
-                'direccion': 500, 'telefono': 20, 'ciudadano': 100, 'pais': 100, 
-                'email': 100, 'username': 150, 'solapin': 50,'area':100
+                'direccion': 500, 'telefono': 20, 'ciudadano': 100, 'pais': 100,
+                'email': 100, 'username': 150, 'solapin': 50, 'area': 100
             },
             'campos_fecha': ['fecha_otorgamiento_categoria', 'fecha_otorgamiento_grado'],
             'campos_unique': ['ci', 'solapin', 'username', 'email']
         }
 
-        # 1. Validar campos obligatorios (excepto para actualización si no se envían)
+        tipo = datos.get('tipo', '').strip().lower()
+
+        # Validación campos obligatorios
         for campo in CONFIG['campos_obligatorios']:
-            valor = datos.get(campo)    
-            
+            valor = datos.get(campo)
+            if update is not None and valor is None:
+                continue
             if valor is None or (isinstance(valor, str) and not valor.strip()):
                 errores.append(f"El campo '{campo}' es obligatorio.")
 
-        # 2. Validar opciones válidas
+        # Validación de opciones
         for campo, opciones in CONFIG['opciones_validas'].items():
-            valor = datos.get(campo)
+            valor = datos.get(campo, '')
             if valor not in opciones:
-                opciones_validas = [str(op) for op in opciones]
-                errores.append(f"Valor no válido para '{campo}'. Opciones válidas: {', '.join(opciones_validas)}")
+                errores.append(f"Valor no válido para '{campo}'. Opciones: {', '.join(map(str, opciones))}")
 
-        # 3. Validar formatos usando regex
+        # Validación regex
         for campo, (patron, mensaje) in CONFIG['validaciones_regex'].items():
             valor = datos.get(campo)
-            if valor and not re.match(patron, str(valor)):
-                errores.append(mensaje)
+            if valor:
+                if not re.match(patron, str(valor)):
+                    errores.append(mensaje)
+                elif campo == 'ci':
+                    ci_str = str(valor)
+                    mes = int(ci_str[2:4])
+                    dia = int(ci_str[4:6])
+                    if not (1 <= mes <= 12):
+                        errores.append("Los dígitos 3-4 del CI deben indicar mes entre 01 y 12")
+                    else:
+                        dias_por_mes = {1:31, 2:28, 3:31, 4:30, 5:31, 6:30,
+                                        7:31, 8:31, 9:30,10:31,11:30,12:31}
+                        if not (1 <= dia <= dias_por_mes[mes]):
+                            errores.append(f"Los dígitos 5-6 del CI deben indicar día válido para el mes {mes:02d}")
 
-        # 4. Validar longitudes máximas
-        for campo, max_length in CONFIG['longitudes_maximas'].items():
+        # Validación longitudes
+        for campo, max_len in CONFIG['longitudes_maximas'].items():
             valor = datos.get(campo)
-            if valor and len(str(valor)) > max_length:
-                errores.append(f"El campo '{campo}' excede la longitud máxima de {max_length} caracteres")
+            if valor and len(str(valor)) > max_len:
+                errores.append(f"El campo '{campo}' excede {max_len} caracteres")
 
-        # 5. Validar unicidad de campos únicos
+        # Validación de unicidad
         for campo in CONFIG['campos_unique']:
             valor = datos.get(campo)
-            queryset = None
             if valor:
                 if campo in ['username', 'email']:
-                    queryset = User.objects.filter(**{campo: valor})
-                    if not update is None:
-                        queryset = queryset.exclude(pk=update.userid.pk)
+                    qs = User.objects.filter(**{campo: valor})
+                    if update is not None:
+                        qs = qs.exclude(pk=update.userid.pk)
                 else:
-                    queryset = Admin_models.Aspirante.objects.filter(**{campo: valor})
-                    if not update is None:
-                        queryset = queryset.exclude(pk=update.pk)
-                        
-                if queryset.exists():
+                    qs = Admin_models.Aspirante.objects.filter(**{campo: valor})
+                    if update is not None:
+                        qs = qs.exclude(pk=update.pk)
+                if qs.exists():
                     errores.append(f"El {campo} '{valor}' ya está registrado")
 
-        # 6. Validar fechas
+        # Validación fechas
         for campo in CONFIG['campos_fecha']:
             valor = datos.get(campo)
-            if not valor in ['','nan','None']:
+            if valor not in [None, '', 'nan']:
                 try:
-                    fecha = datetime.strptime(valor, '%Y-%m-%d').date()
-                    if fecha > datetime.now().date():
+                    f = datetime.strptime(valor, '%Y-%m-%d').date()
+                    if f > datetime.now().date():
                         errores.append(f"La fecha en '{campo}' no puede ser futura")
                 except ValueError:
-                    errores.append(f"Formato de fecha incorrecto en '{campo}'. Use YYYY-MM-DD")
+                    errores.append(f"Formato incorrecto en '{campo}'. Use YYYY-MM-DD")
             else:
                 datos[campo] = None
 
-        # 7. Validar coherencia entre categoría/grado y sus fechas
-        categoria = datos.get('categoria_docente', '')
-        fecha_categoria = datos.get('fecha_otorgamiento_categoria')
-        grado = datos.get('grado_cientifico', '')
-        fecha_grado = datos.get('fecha_otorgamiento_grado')
+        # Coherencia entre tipo y campos docentes
+        if tipo == 'profesor':
+            if not datos.get('categoria_docente') or datos.get('categoria_docente') == 'Ninguna':
+                errores.append("Profesores deben especificar una 'categoria_docente' válida distinta de 'Ninguna'")
+            if not datos.get('fecha_otorgamiento_categoria'):
+                errores.append("Profesores deben especificar 'fecha_otorgamiento_categoria'")
+            if not datos.get('grado_cientifico') or datos.get('grado_cientifico') == 'Ninguno':
+                errores.append("Profesores deben especificar un 'grado_cientifico' válido distinto de 'Ninguno'")
+            if not datos.get('fecha_otorgamiento_grado'):
+                errores.append("Profesores deben especificar 'fecha_otorgamiento_grado'")
 
-        # Validación para categoría docente
-        if categoria and categoria.lower() not in ['ninguna', 'ninguno', '']:
-            if not fecha_categoria:
-                errores.append("Debe proporcionar fecha de otorgamiento para la categoría docente")
-        elif fecha_categoria:
-            errores.append("No puede tener fecha de categoría sin especificar una categoría válida")
+            # Validaciones cruzadas de campos docentes
+            if datos.get('categoria_docente'):
+                if not datos.get('fecha_otorgamiento_categoria'):
+                    errores.append("Debe proporcionar fecha para 'categoria_docente'")
+            if datos.get('fecha_otorgamiento_categoria'):
+                if not datos.get('categoria_docente') or datos.get('categoria_docente') == 'Ninguna':
+                    errores.append("No puede tener fecha de categoría sin categoría válida")
+            if datos.get('grado_cientifico'):
+                if not datos.get('fecha_otorgamiento_grado'):
+                    errores.append("Debe proporcionar fecha para 'grado_cientifico'")
+            if datos.get('fecha_otorgamiento_grado'):
+                if not datos.get('grado_cientifico') or datos.get('grado_cientifico') == 'Ninguno':
+                    errores.append("No puede tener fecha de grado sin grado válido")
 
-        # Validación para grado científico
-        if grado and grado.lower() not in ['ninguno', 'ninguna', '']:
-            if not fecha_grado:
-                errores.append("Debe proporcionar fecha de otorgamiento para el grado científico")
-        elif fecha_grado:
-            errores.append("No puede tener fecha de grado sin especificar un grado válido")
+        elif tipo == 'estudiante':
+            if datos.get('categoria_docente') and datos.get('categoria_docente') != 'Ninguna':
+                errores.append("Estudiantes solo pueden tener 'categoria_docente' con valor 'Ninguna'")
+            if datos.get('grado_cientifico') and datos.get('grado_cientifico') != 'Ninguno':
+                errores.append("Estudiantes solo pueden tener 'grado_cientifico' con valor 'Ninguno'")
+            if datos.get('fecha_otorgamiento_categoria') not in [None, '', 'nan']:
+                errores.append("Estudiantes no deben tener 'fecha_otorgamiento_categoria'")
+            if datos.get('fecha_otorgamiento_grado') not in [None, '', 'nan']:
+                errores.append("Estudiantes no deben tener 'fecha_otorgamiento_grado'")
 
+        
         return 'OK' if not errores else ', '.join(errores) + "."
-
 
 
 
@@ -482,18 +509,19 @@ class Personal_RRHH(View):
                     Error='El nombre de usuario ya está en uso'
                 )
             
-            if User.objects.filter(email=email).exists():
-                return self.Notificacion(
-                    request=request,
-                    Error='El correo electrónico ya está registrado'
-                )
+            #if User.objects.filter(email=email).exists():
+            #    return self.Notificacion(
+            #        request=request,
+            #        Error='El correo electrónico ya está registrado'
+            #    )
             
             try:
                 # Crear nuevo usuario
                 nuevo_usuario = User(
                     username=username,
                     email=email,
-                    is_staff=False  # No es staff para que no tenga acceso a todo
+                    is_staff=False,  # No es staff para que no tenga acceso a todo
+                    tipo_usuario="RRHH"
                 )
                 pass1 = utils.generar_contraseña()
                 nuevo_usuario.set_password(pass1)
@@ -502,6 +530,15 @@ class Personal_RRHH(View):
                 # Asignar al modelo RRHH
                 Admin_models.RRHH.objects.create(userid=nuevo_usuario)
                 
+                chats = Chat_models.Chat.objects.all()
+                for ch in chats:
+                    Chat_models.Miembro_Chat.objects.create(
+                        chat_id=ch,
+                        userid=nuevo_usuario,
+                        tipo="RRHH"
+                    )
+
+
                 # Opcional: Enviar correo con credenciales
                 # utils.enviar_credenciales(email, username, pass1)
                 
@@ -538,3 +575,75 @@ def delete_personal_rrhh(request):
             )
     else:
         return Login_views.redirigir_usuario(request)
+    
+
+
+
+class Editar_Aspirante(View):
+    @staticmethod
+    def Notificacion(request:HttpRequest,aspirante_id:int,Error=None,Success=None):
+        if request.user.is_staff:
+            try:
+                aspirante = Admin_models.Aspirante.objects.get(id=aspirante_id)
+                return render(request,'Admin/edit_personal.html',{
+                    'aspirante':aspirante,'Error':Error,'Success':Success
+                })
+            except Exception as e:
+                print(e)
+        return Login_views.redirigir_usuario(request=request)
+            
+
+    def get(self,request:HttpRequest,aspirante_id:int):
+        if request.user.is_staff:
+            try:
+                aspirante = Admin_models.Aspirante.objects.get(id=aspirante_id)
+                return render(request,'Admin/edit_personal.html',{
+                    'aspirante':aspirante
+                })
+            except Exception as e:
+                print(e)
+        return Login_views.redirigir_usuario(request=request)
+            
+
+
+    def post(self, request:HttpRequest,aspirante_id:int):
+        if request.user.is_staff:
+            if Admin_models.Aspirante.objects.filter(id=aspirante_id).exists():
+                asp_old = Admin_models.Aspirante.objects.get(id=aspirante_id)
+                validacion = Nuevo_Personal.validar_datos_aspirante(datos=request.POST, update=asp_old)
+                if validacion == 'OK':
+                    # Actualizar campos (todos convertidos a string)
+                    asp_old.tipo = request.POST.get('tipo', '')
+                    asp_old.nombres = request.POST.get('nombres', '')
+                    asp_old.primer_apellido = request.POST.get('primer_apellido', '')
+                    asp_old.segundo_apellido = request.POST.get('segundo_apellido', '')
+                    asp_old.sexo = request.POST.get('sexo', '')
+                    asp_old.lugar_nacimiento = request.POST.get('lugar_nacimiento', '')
+                    asp_old.color_piel = request.POST.get('color_piel', '')
+                    asp_old.estado_civil = request.POST.get('estado_civil', '')
+                    asp_old.ciudadano = request.POST.get('ciudadano', '')
+                    asp_old.procedencia_social = request.POST.get('procedencia_social', '')
+                    asp_old.especialidad = request.POST.get('especialidad', '')
+                    asp_old.pais = request.POST.get('pais', '')
+                    asp_old.cargo = request.POST.get('cargo', '')
+                    asp_old.facultad = request.POST.get('facultad', '')
+                    asp_old.ces = request.POST.get('ces', '')
+                    asp_old.departamento = request.POST.get('departamento', '')
+                    asp_old.salario = request.POST.get('salario', '')
+                    asp_old.categoria_docente = request.POST.get('categoria_docente', '')
+                    asp_old.fecha_otorgamiento_categoria = request.POST.get('fecha_otorgamiento_categoria', '')
+                    asp_old.direccion = request.POST.get('direccion', '')
+                    asp_old.grado_cientifico = request.POST.get('grado_cientifico', '')
+                    asp_old.fecha_otorgamiento_grado = request.POST.get('fecha_otorgamiento_grado', '')
+                    asp_old.telefono = request.POST.get('telefono', '')
+                    asp_old.solapin = request.POST.get('solapin', '')
+                    asp_old.area = request.POST.get('area','')
+                    asp_old.userid.username=request.POST.get('username')
+                    asp_old.userid.email=request.POST.get('email')
+                    asp_old.userid.save()
+                    asp_old.save()
+                    return Editar_Aspirante.Notificacion(request=request,aspirante_id=aspirante_id,Success="Aspirante actualizado correctamente.")
+                else:
+                    return Editar_Aspirante.Notificacion(request=request,aspirante_id=aspirante_id,Error=validacion)
+        return Login_views.redirigir_usuario(request=request)
+        

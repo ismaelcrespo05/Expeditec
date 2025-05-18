@@ -1,6 +1,9 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
+User.add_to_class('tipo_usuario', models.TextField(null=False,default='admin'))
+
+
 TIPO_CHOICES = ['Profesor','Estudiante']
 SEXO_CHOICES = ['Masculino','Femenino']
 COLOR_PIEL_CHOICES = ['Blanca','Negra','Mestiza','Asiática']
