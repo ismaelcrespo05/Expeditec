@@ -136,15 +136,26 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    {{ solicitud.aspirante}} <br>Categoría Solicitada: {{ solicitud.categoria_solicitada }}
+                                    {{ solicitud.aspirante }}
                                 </h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    Solicitado el: {{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}
+                                <div class="mt-2 space-y-1">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        <span class="font-medium">Área:</span> {{ solicitud.area }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        <span class="font-medium">Especialidad:</span> {{ solicitud.especialidad_solicitada }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        <span class="font-medium">Categoría Solicitada:</span> {{ solicitud.categoria_solicitada }}
+                                    </p>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                    <span class="font-medium">Solicitado el:</span> {{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}
                                 </p>
                                 {% if solicitud.estado == 'Aprobada' or solicitud.estado == 'Rechazada' %}
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        Resuelto el: {{ solicitud.fecha_resolucion|date:"d/m/Y H:i" }}
-                                    </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    <span class="font-medium">Resuelto el:</span> {{ solicitud.fecha_resolucion|date:"d/m/Y H:i" }}
+                                </p>
                                 {% endif %}
                             </div>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 

@@ -11,4 +11,3 @@ channels-redis
 redis
 uvicorn
 whitenoise
-websocket
