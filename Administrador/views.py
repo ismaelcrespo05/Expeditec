@@ -141,7 +141,7 @@ class Nuevo_Personal(View):
                     for campo in request.POST.keys() 
                     if campo != 'csrfmiddlewaretoken'}
             
-            validacion = Nuevo_Personal.validar_datos_aspirante(datos=datos)
+            validacion = Admin_models.Aspirante.validar_datos_aspirante(datos=datos)
             if validacion != 'OK':
                 return Personal.Notificacion(request=request, Error=validacion, back=request.POST)
             try:
@@ -153,163 +153,6 @@ class Nuevo_Personal(View):
         else:
             return Login_views.redirigir_usuario(request=request)
 
-
-
-    @staticmethod
-    def validar_datos_aspirante(datos: dict, update=None):  # update: instancia de Aspirante para edición
-        errores = []
-
-        CONFIG = {
-            'campos_obligatorios': [
-                'tipo', 'nombres', 'primer_apellido', 'sexo', 'ci',
-                'lugar_nacimiento', 'color_piel', 'estado_civil', 'ciudadano',
-                'procedencia_social', 'pais', 'centro', 'cargo', 'facultad',
-                'ces', 'departamento', 'salario', 'direccion', 'telefono', 'solapin',
-                'username', 'email'
-            ],
-            'campos_opcionales': [
-                'segundo_apellido', 'categoria_docente', 'fecha_otorgamiento_categoria',
-                'grado_cientifico', 'fecha_otorgamiento_grado'
-            ],
-            'opciones_validas': {
-                'tipo': [x[0] for x in Admin_models.Aspirante.TIPO_CHOICES2],
-                'sexo': Admin_models.SEXO_CHOICES,
-                'color_piel': Admin_models.COLOR_PIEL_CHOICES,
-                'estado_civil': Admin_models.ESTADO_CIVIL_CHOICES,
-                'procedencia_social': Admin_models.PROCEDENCIA_SOCIAL_CHOICES,
-                'categoria_docente': Admin_models.CATEGORIA_DOCENTE_CHOICES + ['', 'Ninguna'],
-                'grado_cientifico': Admin_models.GRADO_CIENTIFICO_CHOICES + ['', 'Ninguno']
-            },
-            'validaciones_regex': {
-                'ci': (r'^\d{11}$', "El CI debe tener exactamente 11 dígitos numéricos"),
-                'telefono': (r'^(\+53)?[1-8]\d{6,7}$|^(\+53)?5\d{7}$',
-                            "Formato de teléfono inválido. Use +5371234567 o 51234567"),
-                'salario': (r'^\d+(\.\d{1,2})?$', "Formato de salario inválido"),
-                'email': (r'^[\w\.-]+@[\w\.-]+\.\w+$', "Correo electrónico no válido"),
-                'nombres': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]+$', "Solo letras y espacios"),
-                'primer_apellido': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]+$', "Solo letras y espacios"),
-                'segundo_apellido': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]*$', "Solo letras y espacios"),
-                'ciudadano': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
-                'pais': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
-                'area': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
-                'solapin': (r'^[a-zA-Z0-9]+$', "Solo caracteres alfanuméricos")
-            },
-            'longitudes_maximas': {
-                'nombres': 100, 'primer_apellido': 100, 'segundo_apellido': 100,
-                'ci': 11, 'lugar_nacimiento': 100, 'especialidad': 100, 'centro': 100,
-                'cargo': 100, 'facultad': 100, 'ces': 100, 'departamento': 100,
-                'direccion': 500, 'telefono': 20, 'ciudadano': 100, 'pais': 100,
-                'email': 100, 'username': 150, 'solapin': 50, 'area': 100
-            },
-            'campos_fecha': ['fecha_otorgamiento_categoria', 'fecha_otorgamiento_grado'],
-            'campos_unique': ['ci', 'solapin', 'username', 'email']
-        }
-
-        tipo = datos.get('tipo', '').strip().lower()
-
-        # Validación campos obligatorios
-        for campo in CONFIG['campos_obligatorios']:
-            valor = datos.get(campo)
-            if update is not None and valor is None:
-                continue
-            if valor is None or (isinstance(valor, str) and not valor.strip()):
-                errores.append(f"El campo '{campo}' es obligatorio.")
-
-        # Validación de opciones
-        for campo, opciones in CONFIG['opciones_validas'].items():
-            valor = datos.get(campo, '')
-            if valor not in opciones:
-                errores.append(f"Valor no válido para '{campo}'. Opciones: {', '.join(map(str, opciones))}")
-
-        # Validación regex
-        for campo, (patron, mensaje) in CONFIG['validaciones_regex'].items():
-            valor = datos.get(campo)
-            if valor:
-                if not re.match(patron, str(valor)):
-                    errores.append(mensaje)
-                elif campo == 'ci':
-                    ci_str = str(valor)
-                    mes = int(ci_str[2:4])
-                    dia = int(ci_str[4:6])
-                    if not (1 <= mes <= 12):
-                        errores.append("Los dígitos 3-4 del CI deben indicar mes entre 01 y 12")
-                    else:
-                        dias_por_mes = {1:31, 2:28, 3:31, 4:30, 5:31, 6:30,
-                                        7:31, 8:31, 9:30,10:31,11:30,12:31}
-                        if not (1 <= dia <= dias_por_mes[mes]):
-                            errores.append(f"Los dígitos 5-6 del CI deben indicar día válido para el mes {mes:02d}")
-
-        # Validación longitudes
-        for campo, max_len in CONFIG['longitudes_maximas'].items():
-            valor = datos.get(campo)
-            if valor and len(str(valor)) > max_len:
-                errores.append(f"El campo '{campo}' excede {max_len} caracteres")
-
-        # Validación de unicidad
-        for campo in CONFIG['campos_unique']:
-            valor = datos.get(campo)
-            if valor:
-                if campo in ['username', 'email']:
-                    qs = User.objects.filter(**{campo: valor})
-                    if update is not None:
-                        qs = qs.exclude(pk=update.userid.pk)
-                else:
-                    qs = Admin_models.Aspirante.objects.filter(**{campo: valor})
-                    if update is not None:
-                        qs = qs.exclude(pk=update.pk)
-                if qs.exists():
-                    errores.append(f"El {campo} '{valor}' ya está registrado")
-
-        # Validación fechas
-        for campo in CONFIG['campos_fecha']:
-            valor = datos.get(campo)
-            if valor not in [None, '', 'nan']:
-                try:
-                    f = datetime.strptime(valor, '%Y-%m-%d').date()
-                    if f > datetime.now().date():
-                        errores.append(f"La fecha en '{campo}' no puede ser futura")
-                except ValueError:
-                    errores.append(f"Formato incorrecto en '{campo}'. Use YYYY-MM-DD")
-            else:
-                datos[campo] = None
-
-        # Coherencia entre tipo y campos docentes
-        if tipo == 'profesor':
-            if not datos.get('categoria_docente') or datos.get('categoria_docente') == 'Ninguna':
-                errores.append("Profesores deben especificar una 'categoria_docente' válida distinta de 'Ninguna'")
-            if not datos.get('fecha_otorgamiento_categoria'):
-                errores.append("Profesores deben especificar 'fecha_otorgamiento_categoria'")
-            if not datos.get('grado_cientifico') or datos.get('grado_cientifico') == 'Ninguno':
-                errores.append("Profesores deben especificar un 'grado_cientifico' válido distinto de 'Ninguno'")
-            if not datos.get('fecha_otorgamiento_grado'):
-                errores.append("Profesores deben especificar 'fecha_otorgamiento_grado'")
-
-            # Validaciones cruzadas de campos docentes
-            if datos.get('categoria_docente'):
-                if not datos.get('fecha_otorgamiento_categoria'):
-                    errores.append("Debe proporcionar fecha para 'categoria_docente'")
-            if datos.get('fecha_otorgamiento_categoria'):
-                if not datos.get('categoria_docente') or datos.get('categoria_docente') == 'Ninguna':
-                    errores.append("No puede tener fecha de categoría sin categoría válida")
-            if datos.get('grado_cientifico'):
-                if not datos.get('fecha_otorgamiento_grado'):
-                    errores.append("Debe proporcionar fecha para 'grado_cientifico'")
-            if datos.get('fecha_otorgamiento_grado'):
-                if not datos.get('grado_cientifico') or datos.get('grado_cientifico') == 'Ninguno':
-                    errores.append("No puede tener fecha de grado sin grado válido")
-
-        elif tipo == 'estudiante':
-            if datos.get('categoria_docente') and datos.get('categoria_docente') != 'Ninguna':
-                errores.append("Estudiantes solo pueden tener 'categoria_docente' con valor 'Ninguna'")
-            if datos.get('grado_cientifico') and datos.get('grado_cientifico') != 'Ninguno':
-                errores.append("Estudiantes solo pueden tener 'grado_cientifico' con valor 'Ninguno'")
-            if datos.get('fecha_otorgamiento_categoria') not in [None, '', 'nan']:
-                errores.append("Estudiantes no deben tener 'fecha_otorgamiento_categoria'")
-            if datos.get('fecha_otorgamiento_grado') not in [None, '', 'nan']:
-                errores.append("Estudiantes no deben tener 'fecha_otorgamiento_grado'")
-
-        
-        return 'OK' if not errores else ', '.join(errores) + "."
 
 
 
@@ -366,7 +209,7 @@ class Personal_CSV(View):
 
                         if Admin_models.Aspirante.objects.filter(ci=ci).exists():
                             asp_old = Admin_models.Aspirante.objects.get(ci=ci)
-                            validacion = Nuevo_Personal.validar_datos_aspirante(datos=row_dict, update=asp_old)
+                            validacion = Admin_models.Aspirante.validar_datos_aspirante(datos=row_dict, update=asp_old)
                             if validacion == 'OK':
                                 # Actualizar campos (todos convertidos a string)
                                 asp_old.tipo = row_dict.get('tipo', '')
@@ -401,7 +244,7 @@ class Personal_CSV(View):
                                 errores_detallados.append(f"Fila {index+1}: {validacion}")
                         else:
                             
-                            validacion = Nuevo_Personal.validar_datos_aspirante(datos=row_dict)
+                            validacion = Admin_models.Aspirante.validar_datos_aspirante(datos=row_dict)
                             if validacion == 'OK':
                                 nuevo_aspirante = Nuevo_Personal.registrar(datos=row_dict)
                                 if nuevo_aspirante:
@@ -610,7 +453,7 @@ class Editar_Aspirante(View):
         if request.user.is_staff:
             if Admin_models.Aspirante.objects.filter(id=aspirante_id).exists():
                 asp_old = Admin_models.Aspirante.objects.get(id=aspirante_id)
-                validacion = Nuevo_Personal.validar_datos_aspirante(datos=request.POST, update=asp_old)
+                validacion = Admin_models.Aspirante.validar_datos_aspirante(datos=request.POST, update=asp_old)
                 if validacion == 'OK':
                     # Actualizar campos (todos convertidos a string)
                     asp_old.tipo = request.POST.get('tipo', '')

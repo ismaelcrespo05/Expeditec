@@ -5,6 +5,11 @@ from django.views import View
 from . import models as Aspirante_models
 from django.http import HttpRequest
 from Chat import models as Chat_models
+import json
+import re
+from django.core.exceptions import ValidationError
+
+
 class AspiranteDashboardView(View):
     @staticmethod
     def get_contexto(aspirante):
@@ -23,28 +28,25 @@ class AspiranteDashboardView(View):
             'Dirección particular': aspirante.direccion,
             'Teléfono': aspirante.telefono,
         }
-
         datos_academicos = {
             'Tipo': aspirante.tipo,
-            'Especialidad': aspirante.especialidad,
-            'País': aspirante.pais,
-            'Facultad': aspirante.facultad,
-            'CES': aspirante.ces,
-            'Departamento': aspirante.departamento,
+            'Especialidad': aspirante.especialidad if aspirante.especialidad else '',
+            'País': aspirante.pais if aspirante.pais else '',
+            'Facultad': aspirante.facultad if aspirante.facultad else '',
+            'CES':aspirante.ces if aspirante.ces else '',
+            'Departamento': aspirante.departamento if aspirante.departamento else '',
         }
 
         datos_laborales = {
-            'Centro de trabajo': aspirante.centro,
-            'Cargo': aspirante.cargo,
-            'Area':aspirante.area,
-            'Salario': f"{aspirante.salario:.2f}",
+            'Centro de trabajo': aspirante.centro if aspirante.centro else '',
+            'Cargo': aspirante.cargo if aspirante.cargo else '',
             'Categoría docente': aspirante.categoria_docente if aspirante.categoria_docente else 'No aplica',
             'Fecha otorgamiento categoría': aspirante.fecha_otorgamiento_categoria.strftime('%d/%m/%Y') if aspirante.fecha_otorgamiento_categoria else 'No aplica',
             'Grado científico': aspirante.grado_cientifico if aspirante.grado_cientifico else 'No aplica',
             'Fecha otorgamiento grado': aspirante.fecha_otorgamiento_grado.strftime('%d/%m/%Y') if aspirante.fecha_otorgamiento_grado else 'No aplica',
+            'Salario': f"{aspirante.salario:.2f}",
         }
 
-        
         return {
             'Dashboard':True,
             'aspirante': aspirante,
@@ -66,13 +68,16 @@ class AspiranteDashboardView(View):
         except Exception as e:
             return Login_views.redirigir_usuario(request)
         
-    def get(self, request):
+    def get(self, request:HttpRequest):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             context = AspiranteDashboardView.get_contexto(aspirante)
             return render(request, 'Aspirante/dashboard_aspirante.html', context)
             
         except Exception as e:
+            print(request.user)
+            print(e)
+            input()
             return Login_views.redirigir_usuario(request)
         
 
@@ -139,7 +144,7 @@ class ExpedienteDocenteView(View):
         return render(request, self.template_name, context)
 
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request:HttpRequest, *args, **kwargs):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             tipo = request.POST.get('tipo')
@@ -260,6 +265,7 @@ class Update_ExpedienteDocenteView(View):
                 return ExpedienteDocenteView.Notificacion(request,template_name=self.template_name,aspirante_id=aspirante_id,Error="Documento no encontrado")
         return ExpedienteDocenteView.Notificacion(request,template_name=self.template_name,aspirante_id=aspirante_id)
 
+
 ##########################################################################################################################
 ##########################################################################################################################
 ##########################################################################################################################
@@ -267,7 +273,7 @@ class Update_ExpedienteDocenteView(View):
 
 class Cambio_Categoria(View):
     @staticmethod
-    def Notificacion(request,Error=None,Success=None):
+    def Notificacion(request:HttpRequest,Error=None,Success=None):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
             
@@ -295,7 +301,6 @@ class Cambio_Categoria(View):
             if aspirante.categoria_docente == 'Titular':
                 puede_solicitar = False
             
-
             # Definimos el orden de las categorías
             orden_categorias = Admin_models.CATEGORIA_DOCENTE_CHOICES
 
@@ -305,14 +310,20 @@ class Cambio_Categoria(View):
             except ValueError:
                 indice_actual = -1
 
-            # Calculamos la categoría siguiente si existe
+            # Filtramos las categorías superiores a la actual
             categorias_disponibles = []
-            if indice_actual >= 0 and indice_actual + 1 < len(orden_categorias):
-                siguiente_categoria = orden_categorias[indice_actual + 1]
-                if siguiente_categoria != 'Titular' or aspirante.categoria_docente != 'Titular':
-                    categorias_disponibles = [siguiente_categoria]
+            if indice_actual >= 0:
+                # Tomamos todas las categorías después de la actual
+                categorias_superiores = orden_categorias[indice_actual + 1:]
+                
+                # Si la categoría actual no es 'Titular', mostramos todas las superiores
+                if aspirante.categoria_docente != 'Titular':
+                    categorias_disponibles = categorias_superiores
+                # Si es 'Titular', no mostramos nada (pues no hay categorías superiores)
+                else:
+                    categorias_disponibles = []
             
-            print(categorias_disponibles)
+            
             return render(request, 'Aspirante/cambio_categoria.html', {
                 "Cambio_categoria": True,
                 "solicitudes_por_estado": solicitudes_por_estado,
@@ -322,16 +333,16 @@ class Cambio_Categoria(View):
                 "categoria_actual": aspirante.categoria_docente,
                 "total_solicitudes": total_solicitudes,  # Nuevo campo añadido
                 'tribunales':is_tribunal(aspirante),
+                'requisitos_json': Aspirante_models.REQUISITOS_CATEGORIA,
                 'Error':Error,'Success':Success
             })
             
         except Admin_models.Aspirante.DoesNotExist:
             return Login_views.redirigir_usuario(request)
         
-    def get(self, request):
+    def get(self, request:HttpRequest):
         try:
             aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
-            
             # Obtenemos todas las solicitudes ordenadas por fecha descendente
             solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.filter(
                 aspirante=aspirante
@@ -366,14 +377,19 @@ class Cambio_Categoria(View):
             except ValueError:
                 indice_actual = -1
 
-            # Calculamos la categoría siguiente si existe
+            # Filtramos las categorías superiores a la actual
             categorias_disponibles = []
-            if indice_actual >= 0 and indice_actual + 1 < len(orden_categorias):
-                siguiente_categoria = orden_categorias[indice_actual + 1]
-                if siguiente_categoria != 'Titular' or aspirante.categoria_docente != 'Titular':
-                    categorias_disponibles = [siguiente_categoria]
+            if indice_actual >= 0:
+                # Tomamos todas las categorías después de la actual
+                categorias_superiores = orden_categorias[indice_actual + 1:]
+                
+                # Si la categoría actual no es 'Titular', mostramos todas las superiores
+                if aspirante.categoria_docente != 'Titular':
+                    categorias_disponibles = categorias_superiores
+                # Si es 'Titular', no mostramos nada (pues no hay categorías superiores)
+                else:
+                    categorias_disponibles = []
             
-            print(categorias_disponibles)
             return render(request, 'Aspirante/cambio_categoria.html', {
                 "Cambio_categoria": True,
                 "solicitudes_por_estado": solicitudes_por_estado,
@@ -383,9 +399,13 @@ class Cambio_Categoria(View):
                 "categoria_actual": aspirante.categoria_docente,
                 "total_solicitudes": total_solicitudes,  # Nuevo campo añadido
                 'tribunales':is_tribunal(aspirante),
+                'requisitos_json': Aspirante_models.REQUISITOS_CATEGORIA,
             })
             
-        except Admin_models.Aspirante.DoesNotExist:
+        except Admin_models.Aspirante.DoesNotExist as e:
+            print(request.user)
+            print(e)
+            input("===========")
             return Login_views.redirigir_usuario(request)
         
 
@@ -406,73 +426,121 @@ class Generar_Solicitud(View):
             return Login_views.redirigir_usuario(request)
     
 
-    def post(self, request:HttpRequest):
+    def post(self, request: HttpRequest):
+        #try:
+        aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+        categoria_solicitada = request.POST.get('categoria_solicitada')
+        area = request.POST.get('area', '').strip()
+        especialidad_solicitada = request.POST.get('especialidad', '').strip()
+        
+        # Expresión regular para validar solo letras y espacios en español (incluye ñ, acentos)
+        regex_texto = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$')
+
+        if "" in [categoria_solicitada,area,especialidad_solicitada]:
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="Todos los campos son obligatorios"
+            )
+        
+        # Validar campo área
+        if not area or not regex_texto.match(area):
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="El área debe contener solo letras y espacios válidos"
+            )
+            
+        # Validar campo especialidad
+        if not especialidad_solicitada or not regex_texto.match(especialidad_solicitada):
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="La especialidad debe contener solo letras y espacios válidos"
+            )
+            
+        # Verificar que la categoría solicitada sea válida
+        if not categoria_solicitada in Admin_models.CATEGORIA_DOCENTE_CHOICES:
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="Categoría docente inválida"
+            )
+            
+        # Definir el orden de las categorías
+        orden_categorias = [c for c in Admin_models.CATEGORIA_DOCENTE_CHOICES]
+        
+        # Verificar si el aspirante ya es titular
+        if aspirante.categoria_docente == 'Titular':
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="No puede solicitar cambio de categoría porque ya tiene la máxima categoría docente (Titular)"
+            )
+            
+        # Obtener índices de las categorías actual y solicitada
         try:
-            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
-            categoria_solicitada = request.POST.get('categoria_solicitada')
-            
-            # Verificar que la categoría solicitada sea válida
-            if not categoria_solicitada in Admin_models.CATEGORIA_DOCENTE_CHOICES:
-                return Cambio_Categoria.Notificacion(request=request, Error="Categoría docente inválida")
-            
-            # Definir el orden de las categorías
-            orden_categorias = Admin_models.CATEGORIA_DOCENTE_CHOICES
-            
-            # Verificar si el aspirante ya es titular
-            if aspirante.categoria_docente == 'Titular':
-                return Cambio_Categoria.Notificacion(
-                    request=request, 
-                    Error="No puede solicitar cambio de categoría porque ya tiene la máxima categoría docente (Titular)"
-                )
-            
-            # Obtener índices de las categorías actual y solicitada
-            try:
-                indice_actual = orden_categorias.index(aspirante.categoria_docente)
-                indice_solicitada = orden_categorias.index(categoria_solicitada)
-            except ValueError:
-                return Cambio_Categoria.Notificacion(request=request, Error="Categoría actual o solicitada no válida")
-            
-            # Validar que la categoría solicitada sea exactamente un nivel superior
-            if indice_solicitada != indice_actual + 1:
-                return Cambio_Categoria.Notificacion(
-                    request=request, 
-                    Error=f"Solo puede solicitar una categoría inmediatamente superior. Su categoría actual es {aspirante.categoria_docente}, puede solicitar {orden_categorias[indice_actual + 1]}"
-                )
-            
-            # Verificar si ya existe una solicitud pendiente o en revisión
-            if Aspirante_models.SolicitudCambioCategoria.objects.filter(aspirante=aspirante, estado__in=['Pendiente','En revisión']).exists():
-                return Cambio_Categoria.Notificacion(request=request, Error="Ya hay una solicitud pendiente o en revisión")
-            
-            # Crear la solicitud si pasa todas las validaciones
-            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.create(
-                aspirante=aspirante,
-                categoria_solicitada=categoria_solicitada
+            indice_actual = orden_categorias.index(aspirante.categoria_docente)
+            indice_solicitada = orden_categorias.index(categoria_solicitada)
+        except ValueError:
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="Categoría actual o solicitada no válida"
             )
             
-            # Crear el chat asociado
-            chat = Chat_models.Chat.objects.create(
-                solicitud_id=solicitud
+        # Validar que la categoría solicitada sea mayor que la actual
+        if indice_solicitada <= indice_actual:
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error=f"Debe solicitar una categoría superior a la actual. Su categoría actual es {aspirante.get_categoria_docente_display()}"
             )
             
-            # Agregar al aspirante al chat
+        # Verificar si ya existe una solicitud pendiente o en revisión
+        if Aspirante_models.SolicitudCambioCategoria.objects.filter(
+            aspirante=aspirante, 
+            estado__in=['Pendiente', 'En revisión']
+        ).exists():
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="Ya hay una solicitud pendiente o en revisión"
+            )
+            
+        # Crear la solicitud si pasa todas las validaciones
+        solicitud = Aspirante_models.SolicitudCambioCategoria.objects.create(
+            aspirante=aspirante,
+            categoria_solicitada=categoria_solicitada,
+            area=area,
+            cargo_actual=aspirante.cargo,  # Asumiendo que existe este campo en el modelo Aspirante
+            especialidad_solicitada=especialidad_solicitada
+        )
+        
+        # Crear el chat asociado
+        chat = Chat_models.Chat.objects.create(
+            solicitud_id=solicitud
+        )
+        
+        # Agregar al aspirante al chat
+        Chat_models.Miembro_Chat.objects.create(
+            chat_id=chat, 
+            userid=request.user,
+            tipo=aspirante.tipo
+        )
+        
+        # Agregar a todos los RRHH al chat
+        rrhh = Admin_models.RRHH.objects.all()
+        for rh in rrhh:
             Chat_models.Miembro_Chat.objects.create(
-                chat_id=chat, userid=request.user,
-                tipo=aspirante.tipo
+                chat_id=chat, 
+                userid=rh.userid,
+                tipo="RRHH"
             )
             
-            # Agregar a todos los RRHH al chat
-            rrhh = Admin_models.RRHH.objects.all()
-            for rh in rrhh:
-                Chat_models.Miembro_Chat.objects.create(
-                    chat_id=chat, userid=rh.userid,
-                    tipo="RRHH"
-                )
-                
-            return Cambio_Categoria.Notificacion(request=request, Success="Solicitud enviada con éxito")
-            
-        except Exception as e:
-            print(e)
-            return Login_views.redirigir_usuario(request)    
+        return Cambio_Categoria.Notificacion(
+            request=request, 
+            Success="Solicitud enviada con éxito"
+        )
+        
+        #except Exception as e:
+        #    print(f"Error en solicitud de cambio de categoría: {str(e)}")
+        #    return Cambio_Categoria.Notificacion(
+        #        request=request, 
+        #        Error="Ocurrió un error al procesar la solicitud"
+        #    )
 
 def Eliminar_Solicitud(request:HttpRequest):
     aspirante = None
