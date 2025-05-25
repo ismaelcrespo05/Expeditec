@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'RRHH',
     'Chat',
     'channels',
+    'Registro',
 ]
 
 MIDDLEWARE = [
