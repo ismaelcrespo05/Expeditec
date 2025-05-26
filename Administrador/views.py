@@ -121,8 +121,8 @@ class Nuevo_Personal(View):
             solapin=datos.get('solapin'),
             area=datos.get('area'),
             # Parseamos las fechas directamente en el constructor
-            fecha_otorgamiento_categoria=parse_fecha(datos.get('fecha_otorgamiento_categoria')),
-            fecha_otorgamiento_grado=parse_fecha(datos.get('fecha_otorgamiento_grado'))
+            fecha_otorgamiento_categoria=parse_fecha(datos.get('fecha_otorgamiento_categoria',None)),
+            fecha_otorgamiento_grado=parse_fecha(datos.get('fecha_otorgamiento_grado',None))
         )
         
         aspirante.save()
@@ -230,10 +230,10 @@ class Personal_CSV(View):
                                 asp_old.departamento = row_dict.get('departamento', '')
                                 asp_old.salario = row_dict.get('salario', '')
                                 asp_old.categoria_docente = row_dict.get('categoria_docente', '')
-                                asp_old.fecha_otorgamiento_categoria = row_dict.get('fecha_otorgamiento_categoria', '')
+                                asp_old.fecha_otorgamiento_categoria = row_dict.get('fecha_otorgamiento_categoria', None)
                                 asp_old.direccion = row_dict.get('direccion', '')
                                 asp_old.grado_cientifico = row_dict.get('grado_cientifico', '')
-                                asp_old.fecha_otorgamiento_grado = row_dict.get('fecha_otorgamiento_grado', '')
+                                asp_old.fecha_otorgamiento_grado = row_dict.get('fecha_otorgamiento_grado', None)
                                 asp_old.telefono = row_dict.get('telefono', '')
                                 asp_old.solapin = row_dict.get('solapin', '')
                                 asp_old.area = row_dict.get('area','')
@@ -429,7 +429,16 @@ class Editar_Aspirante(View):
             try:
                 aspirante = Admin_models.Aspirante.objects.get(id=aspirante_id)
                 return render(request,'Admin/edit_personal.html',{
-                    'aspirante':aspirante,'Error':Error,'Success':Success
+                    'aspirante':aspirante,'Error':Error,'Success':Success,
+                    'TIPO_CHOICES': Admin_models.TIPO_CHOICES,
+                    'SEXO_CHOICES': Admin_models.SEXO_CHOICES,
+                    'COLOR_PIEL_CHOICES': Admin_models.COLOR_PIEL_CHOICES,
+                    'ESTADO_CIVIL_CHOICES': Admin_models.ESTADO_CIVIL_CHOICES,
+                    'PROCEDENCIA_SOCIAL_CHOICES': Admin_models.PROCEDENCIA_SOCIAL_CHOICES,
+                    'FACULTAD_CHOICES': Admin_models.FACULTAD_CHOICES,
+                    'DEPARTAMENTO_CHOICES': Admin_models.DEPARTAMENTO_CHOICES,
+                    'CATEGORIA_DOCENTE_CHOICES': Admin_models.CATEGORIA_DOCENTE_CHOICES,
+                    'GRADO_CIENTIFICO_CHOICES': Admin_models.GRADO_CIENTIFICO_CHOICES,
                 })
             except Exception as e:
                 print(e)
@@ -441,7 +450,16 @@ class Editar_Aspirante(View):
             try:
                 aspirante = Admin_models.Aspirante.objects.get(id=aspirante_id)
                 return render(request,'Admin/edit_personal.html',{
-                    'aspirante':aspirante
+                    'aspirante':aspirante,
+                    'TIPO_CHOICES': Admin_models.TIPO_CHOICES,
+                    'SEXO_CHOICES': Admin_models.SEXO_CHOICES,
+                    'COLOR_PIEL_CHOICES': Admin_models.COLOR_PIEL_CHOICES,
+                    'ESTADO_CIVIL_CHOICES': Admin_models.ESTADO_CIVIL_CHOICES,
+                    'PROCEDENCIA_SOCIAL_CHOICES': Admin_models.PROCEDENCIA_SOCIAL_CHOICES,
+                    'FACULTAD_CHOICES': Admin_models.FACULTAD_CHOICES,
+                    'DEPARTAMENTO_CHOICES': Admin_models.DEPARTAMENTO_CHOICES,
+                    'CATEGORIA_DOCENTE_CHOICES': Admin_models.CATEGORIA_DOCENTE_CHOICES,
+                    'GRADO_CIENTIFICO_CHOICES': Admin_models.GRADO_CIENTIFICO_CHOICES,
                 })
             except Exception as e:
                 print(e)
@@ -474,15 +492,20 @@ class Editar_Aspirante(View):
                     asp_old.departamento = request.POST.get('departamento', '')
                     asp_old.salario = request.POST.get('salario', '')
                     asp_old.categoria_docente = request.POST.get('categoria_docente', '')
-                    asp_old.fecha_otorgamiento_categoria = request.POST.get('fecha_otorgamiento_categoria', '')
                     asp_old.direccion = request.POST.get('direccion', '')
                     asp_old.grado_cientifico = request.POST.get('grado_cientifico', '')
-                    asp_old.fecha_otorgamiento_grado = request.POST.get('fecha_otorgamiento_grado', '')
                     asp_old.telefono = request.POST.get('telefono', '')
                     asp_old.solapin = request.POST.get('solapin', '')
                     asp_old.area = request.POST.get('area','')
                     asp_old.userid.username=request.POST.get('username')
                     asp_old.userid.email=request.POST.get('email')
+                    # Manejo especial para fechas
+                    fecha_cat = request.POST.get('fecha_otorgamiento_categoria')
+                    asp_old.fecha_otorgamiento_categoria = fecha_cat if fecha_cat else None
+                    
+                    fecha_grado = request.POST.get('fecha_otorgamiento_grado')
+                    asp_old.fecha_otorgamiento_grado = fecha_grado if fecha_grado else None
+                    
                     asp_old.userid.save()
                     asp_old.save()
                     return Editar_Aspirante.Notificacion(request=request,aspirante_id=aspirante_id,Success="Aspirante actualizado correctamente.")

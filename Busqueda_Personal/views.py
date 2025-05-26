@@ -166,7 +166,6 @@ class Expedientes_Personal(View):
             datos_laborales = {
                 'Centro de trabajo': aspirante.centro,
                 'Cargo': aspirante.cargo,
-                'Area':aspirante.area,
                 'Salario': f"{aspirante.salario:.2f}",
                 'Categoría docente': aspirante.categoria_docente if aspirante.categoria_docente else 'No aplica',
                 'Fecha otorgamiento categoría': aspirante.fecha_otorgamiento_categoria.strftime('%d/%m/%Y') if aspirante.fecha_otorgamiento_categoria else 'No aplica',

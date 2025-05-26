@@ -564,6 +564,12 @@ def Eliminar_Solicitud(request:HttpRequest):
         return Cambio_Categoria.Notificacion(request=request)
     
 
+
+
+
+###############################################################################################################
+
+
 from RRHH import models as RRHH_models
 def is_tribunal(aspirante:Admin_models.Aspirante = None,request:HttpRequest = None):
     if aspirante:
@@ -608,6 +614,7 @@ class Tribunal(View):
                     "ESTADOS": ESTADOS,
                     "categoria_actual": aspirante.categoria_docente,
                     'tribunales':is_tribunal(aspirante),
+                    'CARGOS_CHOICES': ['Miembro','Secretario','Suplente'],
                     'Error':Error,'Success':Success
                 })
             else:
@@ -638,6 +645,7 @@ class Tribunal(View):
                     "ESTADOS": ESTADOS,
                     "categoria_actual": aspirante.categoria_docente,
                     'tribunales':is_tribunal(aspirante),
+                    'CARGOS_CHOICES': ['Miembro','Secretario','Suplente'],
                 })
             else:
                 return AspiranteDashboardView.Notificacion(request=request,Error="No eres miembro de ningún tribunal.")    
@@ -693,6 +701,193 @@ class Tribunal(View):
 
         
     
+
+
+
+class Asignar_tribunal(View):
+    def get(self, request):
+        return Tribunal.Notificacion(request=request)
+
+    def post(self, request: HttpRequest):
+        if request.method == "POST":
+            aspirante = None
+            solicitud = None
+            tribunal = None
+            miembro = None
+            
+            # Validar aspirante
+            try:
+                aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            except Exception as e:
+                print(e)
+                return Login_views.redirigir_usuario(request=request)
+            
+            # Validar solicitud y que es miembro de tribunal
+            if is_tribunal(aspirante):
+                solicitud_id = request.POST.get('solicitud_id')
+                try:
+                    solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id)
+                    tribunal = RRHH_models.Tribunal.objects.get(solicitud_id=solicitud)
+                except Exception as e:
+                    print(e)
+                    return AspiranteDashboardView.Notificacion(request=request, Error="Error al procesar la solicitud.")    
+            else:
+                return AspiranteDashboardView.Notificacion(request=request, Error="No eres miembro de ningún tribunal.")    
+            
+            # Validar si es miembro
+            try:
+                miembro = RRHH_models.Miembro_tribunal.objects.get(tribunal_id=tribunal, miembro=aspirante)
+            except Exception as e:
+                print(e)
+                return Tribunal.Notificacion(request=request, Error="Usted no es miembro de este tribunal.")
+            
+            if solicitud.estado != 'En revisión':
+                return Tribunal.Notificacion(request=request, Error="La solicitud debe estar en estado Pendiente.")
+            
+            profesor_ci = str(request.POST.get('profesor_ci')).strip()
+            profesor = None
+            try:
+                profesor = Admin_models.Aspirante.objects.get(ci=profesor_ci, tipo="Profesor")
+            except Exception as e:
+                print(e)
+                return Tribunal.Notificacion(request=request, Error="El profesor no está registrado.")
+            
+            # Verificar que el profesor no sea el mismo que hizo la solicitud
+            if profesor.userid == solicitud.aspirante.userid:
+                return Tribunal.Notificacion(request=request, Error="No puede asignar al propio solicitante como tribunal.")
+            
+            cargo = request.POST.get('cargo')
+            if cargo not in ['Miembro', 'Secretario', 'Suplente']:
+                return Tribunal.Notificacion(request=request, Error="Seleccione un cargo válido.")
+            
+            # Validar límites de miembros por cargo
+            miembros_tribunal = RRHH_models.Miembro_tribunal.objects.filter(tribunal_id=tribunal)
+            
+            if cargo == 'Suplente':
+                suplentes_count = miembros_tribunal.filter(cargo='Suplente').count()
+                if suplentes_count >= 2 :
+                    return Tribunal.Notificacion(
+                        request=request, 
+                        Error="Ya se han asignado el máximo de 2 suplentes permitidos."
+                    )
+            
+            if cargo == 'Miembro':
+                vocales_count = miembros_tribunal.filter(cargo='Miembro').count()
+                if vocales_count >= 3:
+                    return Tribunal.Notificacion(
+                        request=request, 
+                        Error="Ya se han asignado el máximo de 3 vocales permitidos."
+                    )
+            
+            # Validar que no haya más de un secretario
+            if cargo == 'Secretario':
+                if miembros_tribunal.filter(cargo='Secretario').exists():
+                    return Tribunal.Notificacion(
+                        request=request, 
+                        Error="Ya existe un Secretario asignado a este tribunal."
+                    )
+            
+            # Diccionario de validación de categorías según Resolución 145/2023
+            CATEGORIAS_TRIBUNAL = {
+                'Profesor Titular': ['Profesor Titular'],
+                'Profesor Auxiliar': ['Profesor Titular'],
+                'Profesor Asistente': ['Profesor Titular', 'Profesor Auxiliar'],
+                'Instructor': ['Profesor Titular', 'Profesor Auxiliar'],
+                'ATD Superior': ['Profesor Titular', 'Profesor Auxiliar'],
+                'ATD Medio Superior': ['Profesor Auxiliar', 'Profesor Asistente']
+            }
+            
+            # Validación de categorías
+            categoria_solicitada = solicitud.categoria_solicitada
+            categoria_profesor = profesor.categoria_docente
+            
+            if categoria_solicitada not in CATEGORIAS_TRIBUNAL:
+                return Tribunal.Notificacion(
+                    request=request,
+                    Error=f"Categoría solicitada {categoria_solicitada} no tiene una configuración de tribunal definida."
+                )
+            
+            if categoria_profesor not in CATEGORIAS_TRIBUNAL[categoria_solicitada]:
+                categorias_permitidas = ", ".join(CATEGORIAS_TRIBUNAL[categoria_solicitada])
+                return Tribunal.Notificacion(
+                    request=request,
+                    Error=f"Para evaluar {categoria_solicitada}, el tribunal debe estar compuesto por Profesores con categorías: {categorias_permitidas}."
+                )
+            
+            # Validar que el profesor no esté ya asignado al tribunal (en cualquier cargo)
+            if miembros_tribunal.filter(miembro=profesor).exists():
+                return Tribunal.Notificacion(request=request, Error="El profesor ya fue asignado a este tribunal.")
+            
+            # Crear chat si no existe
+            chat, created = Chat_models.Chat.objects.get_or_create(solicitud_id=solicitud)
+            Chat_models.Miembro_Chat.objects.get_or_create(
+                chat_id=chat, 
+                userid=profesor.userid,
+                tipo="Tribunal"
+            )
+
+            # Asignar miembro al tribunal
+            miembro = RRHH_models.Miembro_tribunal(tribunal_id=tribunal, miembro=profesor, cargo=cargo)
+            miembro.save()
+            
+            return Tribunal.Notificacion(request=request, Success=f"El profesor fue asignado como {cargo} con éxito.")
+        else:
+            return Tribunal.Notificacion(request=request)
+
+
+
+class EliminarMiembroTribunal(View):
+    def get(self,request):
+        return Tribunal.Notificacion(request=request)
+    
+    def post(self, request):
+        try:
+            rrhh = Admin_models.RRHH.objects.get(userid=request.user)
+        except Exception as e:
+            return Login_views.redirigir_usuario(request=request)
+        
+        try:
+            solicitud_id = request.POST.get('solicitud_id')
+            member_id = request.POST.get('member_id')
+            
+            solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id)
+            if solicitud.estado != 'Pendiente':
+                return Tribunal.Notificacion(request=request, Error="Solo se pueden modificar tribunales en solicitudes pendientes")
+            
+            tribunal = RRHH_models.Tribunal.objects.get(solicitud_id=solicitud)
+            miembro = RRHH_models.Miembro_tribunal.objects.get(id=member_id, tribunal_id=tribunal)
+            chat = Chat_models.Chat.objects.get(solicitud_id=solicitud)
+            miembro_chat = Chat_models.Miembro_Chat.objects.get(chat_id=chat,userid=miembro.miembro.userid)
+            miembro_chat.delete()
+            miembro.delete()
+            
+            # Check if there are any members left in the tribunal using the related_name
+            if not tribunal.miembros.exists():  # Using the related_name 'miembros'
+                tribunal.delete()
+            
+            return Tribunal.Notificacion(request=request, Success="El profesor ha sido eliminado del tribunal correctamente.")
+            
+        except Aspirante_models.SolicitudCambioCategoria.DoesNotExist:
+            return Tribunal.Notificacion(request=request, Error="Solicitud no encontrada")
+        except RRHH_models.Tribunal.DoesNotExist:
+            return Tribunal.Notificacion(request=request, Error="Tribunal no encontrado")
+        except RRHH_models.Miembro_tribunal.DoesNotExist:
+            return Tribunal.Notificacion(request=request, Error="Miembro no encontrado")
+        except Exception as e:
+            return Tribunal.Notificacion(request=request, Error=str(e))    
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Aprobar_solicitud(View):

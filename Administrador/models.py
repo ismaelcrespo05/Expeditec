@@ -14,6 +14,8 @@ SEXO_CHOICES = ['Masculino', 'Femenino']
 COLOR_PIEL_CHOICES = ['Blanca', 'Negra']
 ESTADO_CIVIL_CHOICES = ['Soltero/a', 'Casado/a', 'Divorciado/a', 'Viudo/a']
 PROCEDENCIA_SOCIAL_CHOICES = ['Obrera', 'Campesina']
+
+
 FACULTAD_CHOICES = [
     'Facultad de Ciberseguridad',
     'Facultad de Informática Organizacional',
@@ -34,6 +36,7 @@ DEPARTAMENTO_CHOICES = [
     'Departamento de Marxismo Leninismo e Historia',
     'Departamento de Enseñanza Militar'
 ]
+
 CATEGORIA_DOCENTE_CHOICES = [
     'ATD Medio Superior',
     'ATD Superior',
@@ -291,13 +294,15 @@ class Aspirante(models.Model):
                 'grado_cientifico', 'fecha_otorgamiento_grado', 'telefono', 'cargo'
             ],
             'opciones_validas': {
-                'tipo': [x[0] for x in TIPO_CHOICES],
+                'tipo': TIPO_CHOICES,
                 'sexo': SEXO_CHOICES,
                 'color_piel': COLOR_PIEL_CHOICES,
                 'estado_civil': ESTADO_CIVIL_CHOICES,
                 'procedencia_social': PROCEDENCIA_SOCIAL_CHOICES,
                 'categoria_docente': CATEGORIA_DOCENTE_CHOICES,
-                'grado_cientifico': GRADO_CIENTIFICO_CHOICES
+                'grado_cientifico': GRADO_CIENTIFICO_CHOICES,
+                'facultad':FACULTAD_CHOICES,
+                'departamento':DEPARTAMENTO_CHOICES
             },
             'validaciones_regex': {
                 'ci': (r'^\d{11}$', "El CI debe tener exactamente 11 dígitos numéricos"),
@@ -387,15 +392,16 @@ class Aspirante(models.Model):
         # Validación fechas
         for campo in CONFIG['campos_fecha']:
             valor = datos.get(campo)
-            if valor not in [None, '', 'nan']:
-                try:
-                    f = datetime.strptime(valor, '%Y-%m-%d').date()
-                    if f > datetime.now().date():
-                        errores.append(f"La fecha en '{campo}' no puede ser futura")
-                except ValueError:
+            if valor:  # Solo validar si hay un valor (no None ni cadena vacía)
+                if isinstance(valor, str) and valor.lower() == 'nan':
                     errores.append(f"Formato incorrecto en '{campo}'. Use YYYY-MM-DD")
-            else:
-                datos[campo] = None
+                else:
+                    try:
+                        f = datetime.strptime(str(valor), '%Y-%m-%d').date()
+                        if f > datetime.now().date():
+                            errores.append(f"La fecha en '{campo}' no puede ser futura")
+                    except ValueError:
+                        errores.append(f"Formato incorrecto en '{campo}'. Use YYYY-MM-DD")
 
         # Validaciones específicas por tipo
         if tipo == 'Estudiante':
