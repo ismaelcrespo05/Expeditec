@@ -68,7 +68,7 @@ class Registro(View):
                 if opc == "3_1":
                     facultad = request.POST.get('facultad')
                     if facultad in Admin_models.FACULTAD_CHOICES:
-                        user = User(username=username,email=email,tipo_usuario="Estudiante")
+                        user = User(username=username,email=email,tipo_usuario="Aspirante")
                         user.set_password(password1)
                         user.save()
                         get = request.POST.get
@@ -99,7 +99,7 @@ class Registro(View):
                 elif opc == "3_2":
                     v = Validadores.validar_3_2(datos=request.POST)
                     if v == "OK":
-                        user = User(username=username,email=email,tipo_usuario="Estudiante")
+                        user = User(username=username,email=email,tipo_usuario="Aspirante")
                         user.set_password(password1)
                         user.save()
                         get = request.POST.get

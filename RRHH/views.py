@@ -53,8 +53,8 @@ class Solicitudes(View):
             
             solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.all().order_by('-fecha_solicitud')
             
-            ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
-            CATEGORIAS = ['ATD Medio Superior', 'ATD Superior', 'Instructor', 'Asistente', 'Auxiliar', 'Titular']
+            ESTADOS = Aspirante_models.ESTADOS
+            CATEGORIAS = Admin_models.CATEGORIA_DOCENTE_CHOICES
             
             solicitudes_por_estado = {
                 estado: solicitudes.filter(estado=estado) 
@@ -73,7 +73,7 @@ class Solicitudes(View):
                 "puede_solicitar": not tiene_solicitudes_activas,
                 'rrhh': rrhh,
                 'Solicitudes': True,
-                'CARGOS_CHOICES': RRHH_models.CARGOS_CHOICES,
+                'CARGOS_CHOICES': ['Presidente','Secretario'],
                 'Error':Error,'Success':Success
             })
         except Exception as e:
@@ -86,9 +86,9 @@ class Solicitudes(View):
             
             solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.all().order_by('-fecha_solicitud')
             
-            ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
-            CATEGORIAS = ['ATD Medio Superior', 'ATD Superior', 'Instructor', 'Asistente', 'Auxiliar', 'Titular']
-            
+            ESTADOS = Aspirante_models.ESTADOS
+            CATEGORIAS = Admin_models.CATEGORIA_DOCENTE_CHOICES
+
             solicitudes_por_estado = {
                 estado: solicitudes.filter(estado=estado) 
                 for estado in ESTADOS
@@ -106,7 +106,7 @@ class Solicitudes(View):
                 "puede_solicitar": not tiene_solicitudes_activas,
                 'rrhh': rrhh,
                 'Solicitudes': True,
-                'CARGOS_CHOICES': RRHH_models.CARGOS_CHOICES,
+                'CARGOS_CHOICES': ['Presidente','Secretario'],
             })
         
         except Exception as e:
@@ -148,8 +148,8 @@ def filtrar_solicitudes(request: HttpRequest):
 
     solicitudes = Aspirante_models.SolicitudCambioCategoria.objects.all().order_by('-fecha_solicitud')
     
-    ESTADOS = ['Pendiente', 'En revisión', 'Aprobada', 'Rechazada']
-    CATEGORIAS = ['ATD Medio Superior', 'ATD Superior', 'Instructor', 'Asistente', 'Auxiliar', 'Titular']
+    ESTADOS = Aspirante_models.ESTADOS
+    CATEGORIAS = Admin_models.CATEGORIA_DOCENTE_CHOICES
     
     filtros = {
         'estado': request.POST.get('estado'),
@@ -210,19 +210,23 @@ def filtrar_solicitudes(request: HttpRequest):
         "puede_solicitar": not tiene_solicitudes_activas,
         'rrhh': rrhh,
         'Solicitudes': True,
-        'CARGOS_CHOICES': RRHH_models.CARGOS_CHOICES,
+        'CARGOS_CHOICES': ['Presidente','Secretario'],
     }
     return render(request, 'RRHH/solicitudes.html', context)
 
 
 
 
+#################################################################################################################
+####################        TRIBUNAL       ######################################################################
+#################################################################################################################
+
 
 class Asignar_tribunal(View):
     def get(self, request):
         return Solicitudes.Notificacion(request=request)
 
-    def post(self, request):
+    def post(self, request: HttpRequest):
         if request.method == "POST":
             try:
                 rrhh = Admin_models.RRHH.objects.get(userid=request.user)
@@ -254,42 +258,48 @@ class Asignar_tribunal(View):
                 return Solicitudes.Notificacion(request=request, Error="No puede asignar al propio solicitante como tribunal.")
             
             cargo = request.POST.get('cargo')
-            if cargo not in RRHH_models.CARGOS_CHOICES:
+            if cargo not in ['Presidente', 'Secretario']:
                 return Solicitudes.Notificacion(request=request, Error="Seleccione un cargo válido.")
             
-            # Validación de categorías según Resolución 145/2023
+            # Diccionario de validación de categorías según Resolución 145/2023
+            # Clave: categoría solicitada
+            # Valor: lista de categorías permitidas para los miembros del tribunal
+            CATEGORIAS_TRIBUNAL = {
+                'Profesor Titular': ['Profesor Titular'],
+                'Profesor Auxiliar': ['Profesor Titular'],
+                'Profesor Asistente': ['Profesor Titular', 'Profesor Auxiliar'],
+                'Instructor': ['Profesor Titular', 'Profesor Auxiliar'],
+                'ATD Superior': ['Profesor Titular', 'Profesor Auxiliar'],
+                'ATD Medio Superior': ['Profesor Auxiliar', 'Profesor Asistente']
+            }
+            
+            # Validación de categorías
             categoria_solicitada = solicitud.categoria_solicitada
             categoria_profesor = profesor.categoria_docente
             
-            # Definimos los grupos de categorías
-            grupo_titulares_auxiliares = ['Titular', 'Auxiliar']
-            grupo_asistentes_instructores_atd_superior = ['Asistente', 'Instructor', 'ATD Superior']
-            grupo_atd_medio_superior = ['ATD Medio Superior']
+            if categoria_solicitada not in CATEGORIAS_TRIBUNAL:
+                return Solicitudes.Notificacion(
+                    request=request,
+                    Error=f"Categoría solicitada {categoria_solicitada} no tiene una configuración de tribunal definida."
+                )
             
-            # Validamos según la categoría solicitada
-            if categoria_solicitada in grupo_titulares_auxiliares:
-                if categoria_profesor != 'Titular':
-                    return Solicitudes.Notificacion(
-                        request=request, 
-                        Error=f"Para evaluar {categoria_solicitada}, el tribunal debe estar compuesto por Profesores Titulares."
-                    )
-            
-            elif categoria_solicitada in grupo_asistentes_instructores_atd_superior:
-                if categoria_profesor not in ['Titular', 'Auxiliar']:
-                    return Solicitudes.Notificacion(
-                        request=request, 
-                        Error=f"Para evaluar {categoria_solicitada}, el tribunal debe estar compuesto por Profesores Titulares o Auxiliares."
-                    )
-            
-            elif categoria_solicitada in grupo_atd_medio_superior:
-                if categoria_profesor not in ['Auxiliar', 'Asistente']:
-                    return Solicitudes.Notificacion(
-                        request=request, 
-                        Error=f"Para evaluar {categoria_solicitada}, el tribunal debe estar compuesto por Profesores Auxiliares o Asistentes."
-                    )
+            if categoria_profesor not in CATEGORIAS_TRIBUNAL[categoria_solicitada]:
+                categorias_permitidas = ", ".join(CATEGORIAS_TRIBUNAL[categoria_solicitada])
+                return Solicitudes.Notificacion(
+                    request=request,
+                    Error=f"Para evaluar {categoria_solicitada}, el tribunal debe estar compuesto por Profesores con categorías: {categorias_permitidas}."
+                )
             
             tribunal, created = RRHH_models.Tribunal.objects.get_or_create(solicitud_id=solicitud)
             
+            # Validar que no exista ya un miembro con el mismo cargo en el tribunal
+            if RRHH_models.Miembro_tribunal.objects.filter(tribunal_id=tribunal, cargo=cargo).exists():
+                return Solicitudes.Notificacion(
+                    request=request, 
+                    Error=f"Ya existe un {cargo} asignado a este tribunal. Solo puede haber un {cargo} por tribunal."
+                )
+            
+            # Validar que el profesor no esté ya asignado al tribunal (en cualquier cargo)
             if RRHH_models.Miembro_tribunal.objects.filter(tribunal_id=tribunal, miembro=profesor).exists():
                 return Solicitudes.Notificacion(request=request, Error="El profesor ya fue asignado a este tribunal.")
             
@@ -302,10 +312,9 @@ class Asignar_tribunal(View):
             miembro = RRHH_models.Miembro_tribunal(tribunal_id=tribunal, miembro=profesor, cargo=cargo)
             miembro.save()
             
-            return Solicitudes.Notificacion(request=request, Success="El profesor fue asignado con éxito.")
+            return Solicitudes.Notificacion(request=request, Success=f"El profesor fue asignado como {cargo} con éxito.")
         else:
             return Solicitudes.Notificacion(request=request)
-
 
 
 class EliminarMiembroTribunal(View):
@@ -337,7 +346,6 @@ class EliminarMiembroTribunal(View):
             if not tribunal.miembros.exists():  # Using the related_name 'miembros'
                 tribunal.delete()
             
-            
             return Solicitudes.Notificacion(request=request, Success="El profesor ha sido eliminado del tribunal correctamente.")
             
         except Aspirante_models.SolicitudCambioCategoria.DoesNotExist:
@@ -348,6 +356,11 @@ class EliminarMiembroTribunal(View):
             return Solicitudes.Notificacion(request=request, Error="Miembro no encontrado")
         except Exception as e:
             return Solicitudes.Notificacion(request=request, Error=str(e))    
+
+
+
+
+
 
 class Pasar_a_revision(View):
     def get(self, request):

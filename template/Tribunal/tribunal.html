@@ -68,6 +68,14 @@
                                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <div class="flex justify-between items-center mb-2">
                                         <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Tribunal Evaluador</h4>
+                                        <button type="button" 
+                                                class="text-xs inline-flex items-center px-2 py-1 border border-transparent font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-700 dark:hover:bg-blue-600 transition duration-150"
+                                                onclick="openAssignTribunalModal('{{ solicitud.id }}')">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            </svg>
+                                            Añadir miembro
+                                        </button>
                                     </div>
                                     
                                     <div class="space-y-3">
@@ -306,6 +314,66 @@
     {% endfor %}
 </div>
 
+
+
+
+<!-- Modal para Asignar Tribunal -->
+<div id="assignTribunalModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300">
+        <div class="flex justify-between items-start mb-4">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Asignar Miembro al Tribunal
+            </h3>
+            <button onclick="closeAssignTribunalModal()" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <form id="assignTribunalForm" method="post" action="{% url 'asignar_tribunal' %}">
+            {% csrf_token %}
+            <input type="hidden" name="solicitud_id" id="assignSolicitudId">
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label for="profesor_ci" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CI del Profesor</label>
+                    <input type="text" name="profesor_ci" id="profesor_ci" required
+                           class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 transition duration-150"
+                           placeholder="Ej: 12345678">
+                </div>
+                
+                <div>
+                    <label for="cargo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo en el Tribunal</label>
+                    <select name="cargo" id="cargo" required
+                        class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 transition duration-150">
+                        <option value="">Seleccione un cargo</option>
+                        {% for cargo in CARGOS_CHOICES %}
+                            <option value="{{ cargo }}">{{ cargo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeAssignTribunalModal()"
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                    Cancelar
+                </button>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-600 dark:bg-blue-700 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 shadow-md">
+                    Asignar Tribunal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
 <!-- Modal para subir actas -->
 <div id="uploadActaModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300">
@@ -411,6 +479,17 @@
 </div>
 
 <script>
+
+    function openAssignTribunalModal(solicitudId) {
+        document.getElementById('assignSolicitudId').value = solicitudId;
+        document.getElementById('assignTribunalModal').classList.remove('hidden');
+    }
+
+    function closeAssignTribunalModal() {
+        document.getElementById('assignTribunalModal').classList.add('hidden');
+        document.getElementById('assignTribunalForm').reset();
+    }
+    
     // Funciones para el modal de subir actas
     function openUploadActaModal(solicitudId) {
         document.getElementById('solicitud_id').value = solicitudId;
