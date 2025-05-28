@@ -20,24 +20,34 @@ from . import utils
 
 
 class Dashboard(View):
-    def get(self,request:HttpRequest):
+    def get(self, request: HttpRequest): 
         if request.user.is_authenticated and request.user.is_staff:
-            cant_profesores = Admin_models.Aspirante.objects.filter(tipo='Profesor').count()
-            cant_estudiantes = Admin_models.Aspirante.objects.filter(tipo='Estudiante').count()
+            cant_profesores = Admin_models.Aspirante.objects.filter(tipo='Profesor',userid__is_active=True).count()
+            cant_estudiantes = Admin_models.Aspirante.objects.filter(tipo='Estudiante',userid__is_active=True).count()
             cantidad_x_categoria = utils.contar_por_categoria_docente()
             total_usuarios = cant_estudiantes + cant_profesores
+
             distribucion_x_categoria = {}
-            for categoria, cantidad in cantidad_x_categoria.items():
+
+            # Incluir 'Sin categoría' primero
+            sin_categoria_cantidad = cantidad_x_categoria.get('Sin categoría', 0)
+            distribucion_x_categoria['Sin categoría'] = round((sin_categoria_cantidad / total_usuarios) * 100, 2) if total_usuarios != 0 else 0
+
+            # Luego el resto de las categorías en orden definido
+            for categoria in Admin_models.CATEGORIA_DOCENTE_CHOICES:
+                cantidad = cantidad_x_categoria.get(categoria, 0)
                 distribucion_x_categoria[categoria] = round((cantidad / total_usuarios) * 100, 2) if total_usuarios != 0 else 0
-            return render(request,'Admin/dashboard.html',{
-                'Dashboard':True,'cant_profesores':cant_profesores,'cant_estudiantes':cant_estudiantes,
-                'total_personal':total_usuarios,'cantidad_x_categoria':cantidad_x_categoria,
-                'distribucion_x_categoria':distribucion_x_categoria
+
+            return render(request, 'Admin/dashboard.html', {
+                'Dashboard': True,
+                'cant_profesores': cant_profesores,
+                'cant_estudiantes': cant_estudiantes,
+                'total_personal': total_usuarios,
+                'cantidad_x_categoria': cantidad_x_categoria,
+                'distribucion_x_categoria': distribucion_x_categoria
             })
         else:
             return Login_views.redirigir_usuario(request)
-
-
 
 
 
@@ -486,7 +496,6 @@ class Editar_Aspirante(View):
                     asp_old.procedencia_social = request.POST.get('procedencia_social', '')
                     asp_old.especialidad = request.POST.get('especialidad', '')
                     asp_old.pais = request.POST.get('pais', '')
-                    asp_old.cargo = request.POST.get('cargo', '')
                     asp_old.facultad = request.POST.get('facultad', '')
                     asp_old.ces = request.POST.get('ces', '')
                     asp_old.departamento = request.POST.get('departamento', '')
@@ -505,7 +514,10 @@ class Editar_Aspirante(View):
                     
                     fecha_grado = request.POST.get('fecha_otorgamiento_grado')
                     asp_old.fecha_otorgamiento_grado = fecha_grado if fecha_grado else None
-                    
+                    if request.POST.get('tipo') == "Estudiante":
+                        asp_old.cargo = "Estudiante"
+                    else:
+                        asp_old.cargo = request.POST.get('cargo', '')
                     asp_old.userid.save()
                     asp_old.save()
                     return Editar_Aspirante.Notificacion(request=request,aspirante_id=aspirante_id,Success="Aspirante actualizado correctamente.")
@@ -513,3 +525,6 @@ class Editar_Aspirante(View):
                     return Editar_Aspirante.Notificacion(request=request,aspirante_id=aspirante_id,Error=validacion)
         return Login_views.redirigir_usuario(request=request)
         
+
+
+

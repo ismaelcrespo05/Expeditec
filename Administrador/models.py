@@ -218,7 +218,7 @@ class Aspirante(models.Model):
     solapin = models.CharField(
         max_length=50, 
         verbose_name='Solapín',
-        null=False,
+        null=True,
         unique=True,
         validators=[
             RegexValidator(
@@ -272,7 +272,7 @@ class Aspirante(models.Model):
                 raise ValidationError("El grado científico y su fecha de otorgamiento deben ir juntas")
 
     def __str__(self):
-        return f"{self.grado_cientifico or ''} {self.nombres} {self.primer_apellido} {self.segundo_apellido or ''} ({self.get_tipo_display()}{f' {self.categoria_docente}' if self.categoria_docente else ''})"
+        return f"{self.grado_cientifico or ''} {self.nombres} {self.primer_apellido} {self.segundo_apellido or ''} ({f' {self.categoria_docente}' if self.categoria_docente else 'Sin categoría'})"
 
 
 
@@ -286,12 +286,12 @@ class Aspirante(models.Model):
             'campos_obligatorios_generales': [
                 'tipo', 'nombres', 'primer_apellido', 'sexo', 'ci',
                 'lugar_nacimiento', 'color_piel', 'estado_civil', 'ciudadano',
-                'procedencia_social', 'pais', 'salario', 'direccion', 'solapin'
+                'procedencia_social', 'pais', 'salario', 'direccion','telefono'
             ],
             'campos_opcionales_generales': [
                 'segundo_apellido', 'facultad', 'ces', 'departamento', 
                 'categoria_docente', 'fecha_otorgamiento_categoria',
-                'grado_cientifico', 'fecha_otorgamiento_grado', 'telefono', 'cargo'
+                'grado_cientifico', 'fecha_otorgamiento_grado', 'cargo','solapin'
             ],
             'opciones_validas': {
                 'tipo': TIPO_CHOICES,
@@ -314,7 +314,7 @@ class Aspirante(models.Model):
                 'segundo_apellido': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]*$', "Solo letras y espacios"),
                 'ciudadano': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
                 'pais': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
-                'solapin': (r'^[a-zA-Z0-9]+$', "Solo caracteres alfanuméricos")
+                'solapin': (r'^[TE]\d{6}$', "Debe comenzar con 'T' o 'E' seguido de 6 dígitos")
             },
             'longitudes_maximas': {
                 'nombres': 100, 'primer_apellido': 100, 'segundo_apellido': 100,
@@ -419,9 +419,6 @@ class Aspirante(models.Model):
                 if datos.get(campo):
                     errores.append(f"Estudiantes no deben tener valor en '{campo}'")
             
-            # Establecer cargo por defecto
-            datos['cargo'] = 'Estudiante'
-
         elif tipo == 'Profesor':
             # Cargo obligatorio para profesores
             if not datos.get('cargo'):

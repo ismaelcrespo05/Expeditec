@@ -9,20 +9,61 @@ from django.views import View
 from django.db.models import Q
 from Configuracion import views as Config_views
 from collections import defaultdict
+from django.db.models import Value as V
+from django.db.models.functions import Concat
+                    
 # Create your views here.
 
 class Busqueda_Personal(View):
     def get(self,request:HttpRequest):
         return Login_views.redirigir_usuario(request=request)
     
+    @staticmethod
+    def Notificacion(request:HttpRequest,Error=None,Success=None):
+        rrhh = None
+        try:
+            rrhh = Admin_models.RRHH.objects.get(userid=request.user)
+        except Exception as e:
+            pass
+        
+        is_tribunal = False
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            is_tribunal = Aspirante_views.is_tribunal(aspirante=aspirante)
+        except Exception as e:
+            pass
+
+        if not request.user.is_staff and not rrhh and not is_tribunal:
+            return Login_views.redirigir_usuario(request=request)
+        
+        else:
+            # Si no hay término de búsqueda, mostrar todos ordenados
+            return render(request, 'Busqueda_Personal/lista_personal.html', {
+                'aspirantes': Admin_models.Aspirante.objects.filter(userid__is_active=True).order_by('nombres', 'primer_apellido'),
+                'termino_busqueda': '',
+                'total_resultados': Admin_models.Aspirante.objects.count(),
+                'rrhh': rrhh,
+                'base': Config_views.get_base(request=request),
+                'tribunales':is_tribunal,
+                'Error':Error,'Success':Success
+            })
+    
+
     def post(self, request: HttpRequest):
         rrhh = None
         try:
             rrhh = Admin_models.RRHH.objects.get(userid=request.user)
         except Exception as e:
             pass
+        
+        is_tribunal = False
+        try:
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            is_tribunal = Aspirante_views.is_tribunal(aspirante=aspirante)
+        except Exception as e:
+            pass
 
-        if not request.user.is_staff and not rrhh:
+        if not request.user.is_staff and not rrhh and not is_tribunal:
             return Login_views.redirigir_usuario(request=request)
         
         else:
@@ -47,10 +88,7 @@ class Busqueda_Personal(View):
                 consulta_nombre_completo = Q()
                 
                 # Opción 1: Usando annotate (más eficiente si tu DB lo soporta)
-                try:
-                    from django.db.models import Value as V
-                    from django.db.models.functions import Concat
-                    
+                try:                    
                     aspirantes = Admin_models.Aspirante.objects.annotate(
                         nombre_completo=Concat(
                             'nombres', V(' '), 
@@ -62,7 +100,7 @@ class Busqueda_Personal(View):
                         Q(nombre_completo__icontains=buscar) |
                         Q(userid__username__icontains=buscar) |
                         Q(userid__email__icontains=buscar)
-                    ).distinct().order_by('nombres', 'primer_apellido')
+                    )
                 
                 except:
                     # Opción 2: Para bases de datos que no soportan bien Concat
@@ -74,27 +112,31 @@ class Busqueda_Personal(View):
                             ids_coincidentes.append(a.id)
                     
                     aspirantes = Admin_models.Aspirante.objects.filter(
+                        Q(userid__is_active=True) &
                         Q(id__in=ids_coincidentes) |
                         consulta |
                         Q(userid__username__icontains=buscar) |
                         Q(userid__email__icontains=buscar)
-                    ).distinct().order_by('nombres', 'primer_apellido')
-            
+                    )
+
+                aspirantes = aspirantes.filter(userid__is_staff=True).order_by('nombres', 'primer_apellido')
                 return render(request, 'Busqueda_Personal/lista_personal.html', {
                     'aspirantes': aspirantes,
                     'termino_busqueda': buscar_old,
                     'total_resultados': aspirantes.count(),
                     'rrhh': rrhh,
-                    'base': Config_views.get_base(request=request)
+                    'base': Config_views.get_base(request=request),
+                    'tribunales':is_tribunal
                 })
             else:
                 # Si no hay término de búsqueda, mostrar todos ordenados
                 return render(request, 'Busqueda_Personal/lista_personal.html', {
-                    'aspirantes': Admin_models.Aspirante.objects.all().order_by('nombres', 'primer_apellido'),
+                    'aspirantes': Admin_models.Aspirante.objects.filter(userid__is_active=True).order_by('nombres', 'primer_apellido'),
                     'termino_busqueda': '',
                     'total_resultados': Admin_models.Aspirante.objects.count(),
                     'rrhh': rrhh,
                     'base': Config_views.get_base(request=request),
+                    'tribunales':is_tribunal
                 })
     
 
@@ -313,8 +355,10 @@ class Aplicar_filtros(View):
             queryset = queryset.filter(consulta).distinct()
         
         # Ordenar resultados
-        queryset = queryset.order_by('nombres', 'primer_apellido')
-        
+        if str(request.POST.get('mostrar_inactivos'))=='on':
+            queryset = queryset.exclude(userid__is_active=True).order_by('nombres', 'primer_apellido')
+        else:
+            queryset = queryset.exclude(userid__is_active=False).order_by('nombres', 'primer_apellido')
     
         
         # Preparar el contexto de respuesta
@@ -335,3 +379,57 @@ class Aplicar_filtros(View):
         }
         
         return render(request, 'Busqueda_Personal/lista_personal.html', contexto)
+    
+
+
+
+
+class Eliminar_personal(View):
+    def get(self, request):
+        if request.user.is_staff:
+            return Busqueda_Personal.Notificacion(request=request)
+        else:
+            return Login_views.redirigir_usuario(request=request)
+        
+                
+    def post(self, request):
+        if request.user.is_staff:
+            aspirante_id = request.POST.get('aspirante_id')
+            try:
+                aspirante = Admin_models.Aspirante.objects.get(id=aspirante_id)
+                aspirante.userid.is_active = False
+                aspirante.userid.save()
+                return Busqueda_Personal.Notificacion(request=request,Success="El aspirante fue eliminado correctamente.")
+            except Exception as e:
+                return Busqueda_Personal.Notificacion(request=request,Error="El aspirante no esta registrado.")
+                
+        else:
+            return Login_views.redirigir_usuario(request=request)
+        
+
+
+
+
+
+
+class Activar_personal(View):
+    def get(self, request):
+        if request.user.is_staff:
+            return Busqueda_Personal.Notificacion(request=request)
+        else:
+            return Login_views.redirigir_usuario(request=request)
+        
+                
+    def post(self, request):
+        if request.user.is_staff:
+            aspirante_id = request.POST.get('aspirante_id')
+            try:
+                aspirante = Admin_models.Aspirante.objects.get(id=aspirante_id)
+                aspirante.userid.is_active = True
+                aspirante.userid.save()
+                return Busqueda_Personal.Notificacion(request=request,Success="El aspirante fue activado correctamente.")
+            except Exception as e:
+                return Busqueda_Personal.Notificacion(request=request,Error="El aspirante no esta registrado.")
+                
+        else:
+            return Login_views.redirigir_usuario(request=request)

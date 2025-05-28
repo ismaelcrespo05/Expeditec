@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'Chat',
     'channels',
     'Registro',
+    'Notificacion',
 ]
 
 MIDDLEWARE = [

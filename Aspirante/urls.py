@@ -15,5 +15,7 @@ urlpatterns = [
     path('tribunales/',views.Tribunal.as_view(),name='tribunales'),
     path('aprobar',views.Aprobar_solicitud.as_view(),name="aprobar"),
     path('rechazar/',views.Rechazar_solicitud.as_view(),name="rechazar"),
-    path('eliminar_acta/',views.Eliminar_acta_tribunal.as_view(),name="eliminar_acta")
+    path('eliminar_acta/',views.Eliminar_acta_tribunal.as_view(),name="eliminar_acta"),
+    path('eliminar_miembro_tribunal',views.EliminarMiembroTribunal.as_view(),name="tribunal_eliminar_miembro_tribunal"),
+    path('asignar_tribunal/',views.Asignar_tribunal.as_view(),name="tribunal_asignar_tribunal")
 ]

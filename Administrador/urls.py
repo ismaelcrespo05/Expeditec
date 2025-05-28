@@ -11,5 +11,5 @@ urlpatterns = [
     path('registro_personal_csv/',views.Personal_CSV.as_view(),name='personal_csv'),
 
     path('rrhh/',views.Personal_RRHH.as_view(),name='rrhh'),
-    path('delete_rrhh/',views.delete_personal_rrhh,name='delete_personal_rrhh')
+    path('delete_rrhh/',views.delete_personal_rrhh,name='delete_personal_rrhh'),
 ]

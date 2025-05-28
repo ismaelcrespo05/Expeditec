@@ -8,8 +8,7 @@ from Chat import models as Chat_models
 import json
 import re
 from django.core.exceptions import ValidationError
-
-
+from Notificacion import views as Notificacion_views
 class AspiranteDashboardView(View):
     @staticmethod
     def get_contexto(aspirante):
@@ -309,9 +308,8 @@ class Cambio_Categoria(View):
                 indice_actual = orden_categorias.index(aspirante.categoria_docente)
             except ValueError:
                 indice_actual = -1
-
-            # Filtramos las categorías superiores a la actual
             categorias_disponibles = []
+            # Filtramos las categorías superiores a la actual
             if indice_actual >= 0:
                 # Tomamos todas las categorías después de la actual
                 categorias_superiores = orden_categorias[indice_actual + 1:]
@@ -322,8 +320,11 @@ class Cambio_Categoria(View):
                 # Si es 'Titular', no mostramos nada (pues no hay categorías superiores)
                 else:
                     categorias_disponibles = []
-            
-            
+            else:
+                if aspirante.tipo == "Estudiante":
+                    categorias_disponibles = ['ATD Medio Superior']    
+                else:
+                    categorias_disponibles = orden_categorias
             return render(request, 'Aspirante/cambio_categoria.html', {
                 "Cambio_categoria": True,
                 "solicitudes_por_estado": solicitudes_por_estado,
@@ -389,7 +390,11 @@ class Cambio_Categoria(View):
                 # Si es 'Titular', no mostramos nada (pues no hay categorías superiores)
                 else:
                     categorias_disponibles = []
-            
+            else:
+                if aspirante.tipo == "Estudiante":
+                    categorias_disponibles = ['ATD Medio Superior']    
+                else:
+                    categorias_disponibles = orden_categorias
             return render(request, 'Aspirante/cambio_categoria.html', {
                 "Cambio_categoria": True,
                 "solicitudes_por_estado": solicitudes_por_estado,
@@ -403,9 +408,6 @@ class Cambio_Categoria(View):
             })
             
         except Admin_models.Aspirante.DoesNotExist as e:
-            print(request.user)
-            print(e)
-            input("===========")
             return Login_views.redirigir_usuario(request)
         
 
@@ -472,23 +474,34 @@ class Generar_Solicitud(View):
                 request=request, 
                 Error="No puede solicitar cambio de categoría porque ya tiene la máxima categoría docente (Titular)"
             )
-            
-        # Obtener índices de las categorías actual y solicitada
+        indice_actual = -1
         try:
             indice_actual = orden_categorias.index(aspirante.categoria_docente)
+        except ValueError:
+            indice_actual = -1
+        
+        # Obtener índices de las categorías actual y solicitada
+        try:
             indice_solicitada = orden_categorias.index(categoria_solicitada)
         except ValueError:
             return Cambio_Categoria.Notificacion(
                 request=request, 
-                Error="Categoría actual o solicitada no válida"
+                Error="Categoría solicitada no válida"
             )
             
+        if indice_actual == -1 and aspirante.tipo == "Estudiante" and indice_solicitada > 0 :
+            return Cambio_Categoria.Notificacion(
+                request=request, 
+                Error="Como estudiante solo puedes solicitar ATD Medio Superior."
+            )   
+
         # Validar que la categoría solicitada sea mayor que la actual
         if indice_solicitada <= indice_actual:
             return Cambio_Categoria.Notificacion(
                 request=request, 
                 Error=f"Debe solicitar una categoría superior a la actual. Su categoría actual es {aspirante.get_categoria_docente_display()}"
             )
+        
             
         # Verificar si ya existe una solicitud pendiente o en revisión
         if Aspirante_models.SolicitudCambioCategoria.objects.filter(
@@ -530,17 +543,19 @@ class Generar_Solicitud(View):
                 tipo="RRHH"
             )
             
+        Notificacion_views.get_mail(solicitud=solicitud,tipo="NUEVA_SOLICITUD")
+
         return Cambio_Categoria.Notificacion(
             request=request, 
             Success="Solicitud enviada con éxito"
         )
         
         #except Exception as e:
-        #    print(f"Error en solicitud de cambio de categoría: {str(e)}")
-        #    return Cambio_Categoria.Notificacion(
-        #        request=request, 
-        #        Error="Ocurrió un error al procesar la solicitud"
-        #    )
+        #print(f"Error en solicitud de cambio de categoría: {str(e)}")
+        #return Cambio_Categoria.Notificacion(
+        #    request=request, 
+        #    Error="Ocurrió un error al procesar la solicitud"
+        #)
 
 def Eliminar_Solicitud(request:HttpRequest):
     aspirante = None
@@ -680,9 +695,15 @@ class Tribunal(View):
         #validar si es miembro
         try:
             miembro = RRHH_models.Miembro_tribunal.objects.get(tribunal_id=tribunal,miembro=aspirante)
+            if miembro.cargo not in ['Presidente','Secretario']:
+                return Tribunal.Notificacion(request=request,Error="Esta acción solo es permitida para el Presidente y Secretario.")    
         except Exception as e:
             print(e)
             return Tribunal.Notificacion(request=request,Error="Usted no es miembro de este tribunal.")
+        
+        
+        if solicitud.estado != 'En revisión':
+            return Tribunal.Notificacion(request=request, Error="La solicitud debe estar en revisión.")
         
         archivo = request.FILES.get('archivo')
         if not archivo:
@@ -737,12 +758,14 @@ class Asignar_tribunal(View):
             # Validar si es miembro
             try:
                 miembro = RRHH_models.Miembro_tribunal.objects.get(tribunal_id=tribunal, miembro=aspirante)
+                if miembro.cargo not in ["Presidente"]:
+                    return Tribunal.Notificacion(request=request,Error="Esta acción solo es permitida para el Presidente")
             except Exception as e:
                 print(e)
                 return Tribunal.Notificacion(request=request, Error="Usted no es miembro de este tribunal.")
             
             if solicitud.estado != 'En revisión':
-                return Tribunal.Notificacion(request=request, Error="La solicitud debe estar en estado Pendiente.")
+                return Tribunal.Notificacion(request=request, Error="La solicitud debe estar en revisión.")
             
             profesor_ci = str(request.POST.get('profesor_ci')).strip()
             profesor = None
@@ -840,41 +863,99 @@ class EliminarMiembroTribunal(View):
     def get(self,request):
         return Tribunal.Notificacion(request=request)
     
-    def post(self, request):
+    def post(self, request: HttpRequest):
         try:
-            rrhh = Admin_models.RRHH.objects.get(userid=request.user)
-        except Exception as e:
-            return Login_views.redirigir_usuario(request=request)
-        
-        try:
+            # Validar usuario aspirante
+            aspirante = Admin_models.Aspirante.objects.get(userid=request.user)
+            
+            # Verificar si es tribunal
+            if not is_tribunal(aspirante):
+                return AspiranteDashboardView.Notificacion(
+                    request=request, 
+                    Error="No eres miembro de ningún tribunal."
+                )
+            
+            # Obtener y validar solicitud
             solicitud_id = request.POST.get('solicitud_id')
             member_id = request.POST.get('member_id')
             
+            if not solicitud_id or not member_id:
+                return Tribunal.Notificacion(
+                    request=request, 
+                    Error="Datos incompletos en la solicitud."
+                )
+                
             solicitud = Aspirante_models.SolicitudCambioCategoria.objects.get(id=solicitud_id)
-            if solicitud.estado != 'Pendiente':
-                return Tribunal.Notificacion(request=request, Error="Solo se pueden modificar tribunales en solicitudes pendientes")
-            
             tribunal = RRHH_models.Tribunal.objects.get(solicitud_id=solicitud)
-            miembro = RRHH_models.Miembro_tribunal.objects.get(id=member_id, tribunal_id=tribunal)
-            chat = Chat_models.Chat.objects.get(solicitud_id=solicitud)
-            miembro_chat = Chat_models.Miembro_Chat.objects.get(chat_id=chat,userid=miembro.miembro.userid)
-            miembro_chat.delete()
-            miembro.delete()
             
-            # Check if there are any members left in the tribunal using the related_name
-            if not tribunal.miembros.exists():  # Using the related_name 'miembros'
+            # Validar estado de la solicitud
+            if solicitud.estado != 'En revisión':
+                return Tribunal.Notificacion(
+                    request=request, 
+                    Error="La solicitud debe estar en revisión."
+                )
+            
+            # Validar que el usuario es presidente del tribunal
+            miembro_presidente = RRHH_models.Miembro_tribunal.objects.get(
+                tribunal_id=tribunal, 
+                miembro=aspirante,
+                cargo="Presidente"
+            )
+            
+            # Obtener miembro a eliminar (verificando que no sea el mismo)
+            miembro_a_eliminar = RRHH_models.Miembro_tribunal.objects.get(
+                id=member_id,
+                tribunal_id=tribunal
+            )
+            
+            if miembro_a_eliminar.miembro == aspirante:
+                return Tribunal.Notificacion(
+                    request=request,
+                    Error="No puedes eliminarte a ti mismo del tribunal."
+                )
+            
+            # Eliminar miembro del chat y del tribunal
+            chat = Chat_models.Chat.objects.get(solicitud_id=solicitud)
+            Chat_models.Miembro_Chat.objects.filter(
+                chat_id=chat,
+                userid=miembro_a_eliminar.miembro.userid
+            ).delete()
+            
+            miembro_a_eliminar.delete()
+            
+            # Eliminar tribunal si no quedan miembros
+            if not tribunal.miembros.exists():
                 tribunal.delete()
             
-            return Tribunal.Notificacion(request=request, Success="El profesor ha sido eliminado del tribunal correctamente.")
-            
-        except Aspirante_models.SolicitudCambioCategoria.DoesNotExist:
-            return Tribunal.Notificacion(request=request, Error="Solicitud no encontrada")
-        except RRHH_models.Tribunal.DoesNotExist:
-            return Tribunal.Notificacion(request=request, Error="Tribunal no encontrado")
+            return Tribunal.Notificacion(
+                request=request, 
+                Success="El profesor ha sido eliminado del tribunal correctamente."
+            )
+        
+        except Admin_models.Aspirante.DoesNotExist:
+            return Login_views.redirigir_usuario(request=request)
         except RRHH_models.Miembro_tribunal.DoesNotExist:
-            return Tribunal.Notificacion(request=request, Error="Miembro no encontrado")
+            return Tribunal.Notificacion(
+                request=request, 
+                Error="No tienes permisos para esta acción o el miembro no existe."
+            )
+        except Aspirante_models.SolicitudCambioCategoria.DoesNotExist:
+            return Tribunal.Notificacion(
+                request=request, 
+                Error="Solicitud no encontrada."
+            )
+        except RRHH_models.Tribunal.DoesNotExist:
+            return Tribunal.Notificacion(
+                request=request, 
+                Error="Tribunal no encontrado."
+            )
         except Exception as e:
-            return Tribunal.Notificacion(request=request, Error=str(e))    
+            print(f"Error: {str(e)}")
+            return Tribunal.Notificacion(
+                request=request, 
+                Error=f"Error al procesar la solicitud: {str(e)}"
+            )
+    
 
 
 
@@ -885,17 +966,6 @@ class EliminarMiembroTribunal(View):
 
 
 
-
-
-
-
-
-class Aprobar_solicitud(View):
-    def get(self,request):
-        pass
-
-    def post(self,request):
-        pass
 
 
 
@@ -930,6 +1000,7 @@ class Rechazar_solicitud(View):
             if not request.POST.get('observaciones') in [None, '']:
                 solicitud.observaciones = request.POST.get('observaciones')
             solicitud.save()
+            Notificacion_views.get_mail(solicitud=solicitud,tipo="RECHAZADA_TRIBUNAL")
             return AspiranteDashboardView.Notificacion(request=request, Success="Solicitud rechazada correctamente")
         except Exception as e:
             print(e)
@@ -971,6 +1042,7 @@ class Aprobar_solicitud(View):
             solicitud.aspirante.categoria_docente = solicitud.categoria_solicitada
             solicitud.aspirante.save()
             solicitud.save()
+            Notificacion_views.get_mail(solicitud=solicitud,tipo="APROBADA_TRIBUNAL")
             return AspiranteDashboardView.Notificacion(request=request, Success="Solicitud aprobada correctamente")
         except Exception as e:
             print(e)
