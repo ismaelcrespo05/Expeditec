@@ -2,6 +2,79 @@
 {% load static %}
 {% block contenido %}
 <div class="space-y-6">
+    <!-- Modal de confirmación para eliminar -->
+    <div id="confirm-delete-modal" class="hidden fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative p-5 w-full max-w-md">
+            <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
+                <!-- Modal header -->
+                <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-700">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                        Confirmar eliminación
+                    </h3>
+                    <button type="button" onclick="closeDeleteModal()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>  
+                    </button>
+                </div>
+                <!-- Modal body -->
+                <div class="p-6 space-y-6">
+                    <p class="text-base leading-relaxed text-gray-500 dark:text-gray-300">
+                        ¿Está seguro que desea eliminar este registro? Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <!-- Modal footer -->
+                <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-700">
+                    <form id="delete-form" method="POST" action="{% url 'eliminar_personal' %}">
+                        {% csrf_token %}
+                        <input type="hidden" id="aspirante-id-input" name="aspirante_id" value="">
+                        <button type="submit" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-800">
+                            Confirmar eliminación
+                        </button>
+                    </form>
+                    <button onclick="closeDeleteModal()" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para activar -->
+    <div id="confirm-activate-modal" class="hidden fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative p-5 w-full max-w-md">
+            <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
+                <!-- Modal header -->
+                <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-700">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                        Confirmar activación
+                    </h3>
+                    <button type="button" onclick="closeActivateModal()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-700 dark:hover:text-white">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>  
+                    </button>
+                </div>
+                <!-- Modal body -->
+                <div class="p-6 space-y-6">
+                    <p class="text-base leading-relaxed text-gray-500 dark:text-gray-300">
+                        ¿Está seguro que desea activar este registro? El usuario podrá acceder al sistema nuevamente.
+                    </p>
+                </div>
+                <!-- Modal footer -->
+                <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-700">
+                    <form id="activate-form" method="POST" action="{% url 'activar_personal' %}">
+                        {% csrf_token %}
+                        <input type="hidden" id="aspirante-activate-id-input" name="aspirante_id" value="">
+                        <button type="submit" class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-800">
+                            Confirmar activación
+                        </button>
+                    </form>
+                    <button onclick="closeActivateModal()" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resto del contenido -->
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Resultados de Búsqueda</h1>
@@ -47,7 +120,6 @@
         </div>
     </div>
 
-    <!-- Resto del contenido de la plantilla (igual que antes) -->
     {% if not aspirantes %}
         <div class="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -77,9 +149,16 @@
                                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                                         {{ aspirante.nombres }} {{ aspirante.primer_apellido }} {{ aspirante.segundo_apellido|default:"" }}
                                     </h3>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                        {{ aspirante.tipo }}
-                                    </span>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                            {{ aspirante.tipo }}
+                                        </span>
+                                        {% if not aspirante.userid.is_active %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                No activo
+                                            </span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                     CI: {{ aspirante.ci }} | {{ aspirante.sexo }} | {{ aspirante.color_piel }} | {{ aspirante.estado_civil }} | {{aspirante.userid.email}} | {{aspirante.userid}}
@@ -128,14 +207,27 @@
                                     <a href="{% url 'editar_aspirante' aspirante.id %}" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
                                         Editar
                                     </a>
+                                    
+                                    {% if aspirante.userid.is_active %}
+                                        <button onclick="openDeleteModal('{{aspirante.id}}')" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-800 dark:focus:ring-red-600">
+                                            Eliminar
+                                        </button>
+                                    {% else %}
+                                        <button onclick="openActivateModal('{{aspirante.id}}')" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-600">
+                                            Activar
+                                        </button>
+                                    {% endif %}
                                 {% endif %}
-                                <form action="{% url 'expediente_personal' %}" method="post">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="aspirante_id" value="{{aspirante.id}}">
-                                    <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                        Ver detalles
-                                    </button>
-                                </form>
+                                
+                                {% if not tribunales %}
+                                    <form action="{% url 'expediente_personal' %}" method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="aspirante_id" value="{{aspirante.id}}">
+                                        <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            Ver detalles
+                                        </button>
+                                    </form>
+                                {% endif %}     
                             </div>
                         </div>
                     </div>
@@ -154,5 +246,37 @@
         day: 'numeric'
     });
 
+    // Funciones para manejar el modal de eliminación
+    function openDeleteModal(aspiranteId) {
+        document.getElementById('aspirante-id-input').value = aspiranteId;
+        document.getElementById('confirm-delete-modal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('confirm-delete-modal').classList.add('hidden');
+    }
+
+    // Funciones para manejar el modal de activación
+    function openActivateModal(aspiranteId) {
+        document.getElementById('aspirante-activate-id-input').value = aspiranteId;
+        document.getElementById('confirm-activate-modal').classList.remove('hidden');
+    }
+
+    function closeActivateModal() {
+        document.getElementById('confirm-activate-modal').classList.add('hidden');
+    }
+
+    // Cerrar modales al hacer clic fuera del contenido
+    window.onclick = function(event) {
+        const deleteModal = document.getElementById('confirm-delete-modal');
+        const activateModal = document.getElementById('confirm-activate-modal');
+        
+        if (event.target === deleteModal) {
+            closeDeleteModal();
+        }
+        if (event.target === activateModal) {
+            closeActivateModal();
+        }
+    }
 </script>
 {% endblock %}

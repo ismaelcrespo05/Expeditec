@@ -10,13 +10,19 @@ smtp_password = "nmmwerzbvlbynsxn"
 
 
 # Función para enviar correo electrónico
-def enviar_correo(email,asunto,mensaje):
-    destinatarios = [email]
+def enviar_correo(email, asunto, mensaje):
+    # Aceptar tanto string como lista de correos
+    if isinstance(email, list):
+        destinatarios = email
+    else:
+        destinatarios = [email]
+
     msg = EmailMessage()
     msg['Subject'] = asunto
     msg['From'] = smtp_username
     msg['To'] = ", ".join(destinatarios)
     msg.set_content(mensaje)
+
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()

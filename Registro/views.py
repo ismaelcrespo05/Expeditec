@@ -204,11 +204,11 @@ class Validadores:
         VALIDATION_CONFIG = {
             'required_fields': [
                 'tipo', 'nombres', 'primer_apellido', 'sexo', 'ci',
-                'color_piel', 'estado_civil', 'procedencia_social','solapin'
+                'color_piel', 'estado_civil', 'procedencia_social', 'telefono'
             ],
             'optional_fields': [
                 'segundo_apellido', 'lugar_nacimiento', 'ciudadano', 
-                'pais', 'salario', 'direccion', 'telefono'
+                'pais', 'salario', 'direccion','solapin'
             ],
             'valid_options': {
                 'tipo': Admin_models.TIPO_CHOICES,
@@ -227,7 +227,7 @@ class Validadores:
                 'segundo_apellido': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s\'-]*$', "Solo letras y espacios"),
                 'ciudadano': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
                 'pais': (r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', "Solo letras y espacios"),
-                'solapin': (r'^[a-zA-Z0-9]+$', "Solo caracteres alfanuméricos")
+                'solapin': (r'^[TE]\d{6}$', "Debe comenzar con 'T' o 'E' seguido de 6 dígitos")
             },
             'max_lengths': {
                 'nombres': 100, 

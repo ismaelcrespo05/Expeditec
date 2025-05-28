@@ -9,4 +9,5 @@ urlpatterns = [
     path('asignar_tribunal/',views.Asignar_tribunal.as_view(),name="asignar_tribunal"),
     path('eliminar_miembro_tribunal/',views.EliminarMiembroTribunal.as_view(),name="eliminar_miembro_tribunal"),
     path('pasar_a_revision/',views.Pasar_a_revision.as_view(),name="pasar_a_revision"),
+    path('exportar_solicitudes/',views.exportar_solicitudes,name="exportar"),
 ]
