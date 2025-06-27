@@ -26,8 +26,9 @@
                         <label for="tipo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de usuario</label>
                         <select required id="tipo" name="tipo" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
-                            <option value="Profesor" {% if aspirante.tipo == "Profesor" %}selected{% endif %}>Profesor</option>
-                            <option value="Estudiante" {% if aspirante.tipo == "Estudiante" %}selected{% endif %}>Estudiante</option>
+                            {% for choice in TIPO_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.tipo == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div>
@@ -42,15 +43,16 @@
                     
                     <div>
                         <label for="segundo_apellido" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Segundo Apellido</label>
-                        <input required type="text" id="segundo_apellido" value="{{aspirante.segundo_apellido}}" name="segundo_apellido" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <input type="text" id="segundo_apellido" value="{{aspirante.segundo_apellido}}" name="segundo_apellido" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
                     
                     <div>
                         <label for="sexo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sexo</label>
                         <select required id="sexo" name="sexo" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
-                            <option value="Masculino" {% if aspirante.sexo == "Masculino" %}selected{% endif %}>Masculino</option>
-                            <option value="Femenino" {% if aspirante.sexo == "Femenino" %}selected{% endif %}>Femenino</option>
+                            {% for choice in SEXO_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.sexo == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     
@@ -69,10 +71,9 @@
                         <label for="color_piel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color de Piel</label>
                         <select required id="color_piel" name="color_piel" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
-                            <option value="Blanca" {% if aspirante.color_piel == "Blanca" %}selected{% endif %}>Blanca</option>
-                            <option value="Negra" {% if aspirante.color_piel == "Negra" %}selected{% endif %}>Negra</option>
-                            <option value="Mestiza" {% if aspirante.color_piel == "Mestiza" %}selected{% endif %}>Mestiza</option>
-                            <option value="Asiática" {% if aspirante.color_piel == "Asiática" %}selected{% endif %}>Asiática</option>
+                            {% for choice in COLOR_PIEL_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.color_piel == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     
@@ -80,10 +81,9 @@
                         <label for="estado_civil" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado Civil</label>
                         <select required id="estado_civil" name="estado_civil" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
-                            <option value="Soltero/a" {% if aspirante.estado_civil == "Soltero/a" %}selected{% endif %}>Soltero/a</option>
-                            <option value="Casado/a" {% if aspirante.estado_civil == "Casado/a" %}selected{% endif %}>Casado/a</option>
-                            <option value="Divorciado/a" {% if aspirante.estado_civil == "Divorciado/a" %}selected{% endif %}>Divorciado/a</option>
-                            <option value="Viudo/a" {% if aspirante.estado_civil == "Viudo/a" %}selected{% endif %}>Viudo/a</option>
+                            {% for choice in ESTADO_CIVIL_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.estado_civil == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     
@@ -96,10 +96,9 @@
                         <label for="procedencia_social" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Procedencia Social</label>
                         <select required id="procedencia_social" name="procedencia_social" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
-                            <option value="Obrera" {% if aspirante.procedencia_social == "Obrera" %}selected{% endif %}>Obrera</option>
-                            <option value="Campesina" {% if aspirante.procedencia_social == "Campesina" %}selected{% endif %}>Campesina</option>
-                            <option value="Intelectual" {% if aspirante.procedencia_social == "Intelectual" %}selected{% endif %}>Intelectual</option>
-                            <option value="Otra" {% if aspirante.procedencia_social == "Otra" %}selected{% endif %}>Otra</option>
+                            {% for choice in PROCEDENCIA_SOCIAL_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.procedencia_social == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     
@@ -109,10 +108,6 @@
                     </div>
                     
                     <!-- Columna 3 -->
-                    <div>
-                        <label for="area" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Área</label>
-                        <input type="text" id="area" name="area" value="{{aspirante.area}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                    </div>
                     <div>
                         <label for="centro" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Centro</label>
                         <input type="text" id="centro" name="centro" value="{{aspirante.centro}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
@@ -129,7 +124,12 @@
                     
                     <div>
                         <label for="facultad" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Facultad</label>
-                        <input required type="text" id="facultad" name="facultad" value="{{aspirante.facultad}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <select id="facultad" name="facultad" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">Seleccione...</option>
+                            {% for choice in FACULTAD_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.facultad == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     
                     <div>
@@ -139,7 +139,12 @@
                     
                     <div>
                         <label for="departamento" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento</label>
-                        <input type="text" id="departamento" name="departamento" value="{{aspirante.departamento}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <select id="departamento" name="departamento" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">Seleccione...</option>
+                            {% for choice in DEPARTAMENTO_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.departamento == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     
                     <div>
@@ -151,17 +156,18 @@
                         <input required type="text" id="direccion" name="direccion" value="{{aspirante.direccion}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
                     <!-- Campos adicionales -->
+                     <div>
+                        <label for="solapin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solapín</label>
+                        <input required type="text" id="solapin" name="solapin" value="{{aspirante.solapin}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
                     <div>
                         <label for="categoria_docente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoría Docente/Científica</label>
-                        <select required id="categoria_docente" name="categoria_docente" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <select id="categoria_docente" name="categoria_docente" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
-                            <option value="Ninguna" {% if aspirante.categoria_docente == "Ninguna" %}selected{% endif %}>Ninguna</option>
-                            <option value="ATD Medio Superior" {% if aspirante.categoria_docente == "ATD Medio Superior" %}selected{% endif %}>ATD Medio Superior</option>
-                            <option value="ATD Superior" {% if aspirante.categoria_docente == "ATD Superior" %}selected{% endif %}>ATD Superior</option>
-                            <option value="Instructor" {% if aspirante.categoria_docente == "Instructor" %}selected{% endif %}>Instructor</option>
-                            <option value="Asistente" {% if aspirante.categoria_docente == "Asistente" %}selected{% endif %}>Asistente</option>
-                            <option value="Auxiliar" {% if aspirante.categoria_docente == "Auxiliar" %}selected{% endif %}>Auxiliar</option>
-                            <option value="Titular" {% if aspirante.categoria_docente == "Titular" %}selected{% endif %}>Titular</option>    
+                            {% for choice in CATEGORIA_DOCENTE_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.categoria_docente == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     
@@ -171,19 +177,17 @@
                     </div>
                     
                     <div>
-                        <label for="solapin" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Solapín</label>
-                        <input required type="text" id="solapin" name="solapin" value="{{aspirante.solapin}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <label for="telefono" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                        <input type="tel" id="telefono" name="telefono" value="{{aspirante.telefono}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
 
                     <div>
                         <label for="grado_cientifico" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Grado Científico</label>
-                        <select required id="grado_cientifico" name="grado_cientifico" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        <select id="grado_cientifico" name="grado_cientifico" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
-                            <option value="Licenciado" {% if aspirante.grado_cientifico == "Licenciado" %}selected{% endif %}>Licenciado</option>
-                            <option value="Ingeniero" {% if aspirante.grado_cientifico == "Ingeniero" %}selected{% endif %}>Ingeniero</option>
-                            <option value="Máster" {% if aspirante.grado_cientifico == "Máster" %}selected{% endif %}>Máster</option>
-                            <option value="Doctor" {% if aspirante.grado_cientifico == "Doctor" %}selected{% endif %}>Doctor</option>
-                            <option value="Ninguno" {% if aspirante.grado_cientifico == "Ninguno" %}selected{% endif %}>Ninguno</option>    
+                            {% for choice in GRADO_CIENTIFICO_CHOICES %}
+                            <option value="{{choice}}" {% if aspirante.grado_cientifico == choice %}selected{% endif %}>{{choice}}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     
@@ -192,11 +196,7 @@
                         <input type="date" id="fecha_otorgamiento_grado" name="fecha_otorgamiento_grado" value="{{aspirante.fecha_otorgamiento_grado|date:'Y-m-d'}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
                     </div>
                     
-                    <div>
-                        <label for="telefono" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
-                        <input required type="tel" id="telefono" name="telefono" value="{{aspirante.telefono}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                    </div>
-
+                    
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de usuario</label>
                         <input required type="text" id="username" name="username" value="{{aspirante.userid.username}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
@@ -205,8 +205,7 @@
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo electrónico</label>
                         <input required type="email" id="email" name="email" value="{{aspirante.userid.email}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                    </div>
-                    
+                    </div>                    
                 </div>
     
                 <div class="flex justify-end space-x-3 pt-4">

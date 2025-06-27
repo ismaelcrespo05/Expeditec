@@ -39,21 +39,31 @@ def generar_contraseña(longitud=24):
 
 from django.db.models import Count
 from . import models as Admin_models
+
 def contar_por_categoria_docente():
     # Contar la cantidad de aspirantes por cada categoría docente
-    categoria_counts = Admin_models.Aspirante.objects.values('categoria_docente').annotate(count=Count('categoria_docente'))
-    
+    categoria_counts = Admin_models.Aspirante.objects.filter(userid__is_active=True).values('categoria_docente').annotate(count=Count('categoria_docente'))
+
     # Crear un diccionario con el nombre de la categoría y su respectivo conteo
-    categoria_dict = {categoria['categoria_docente']: categoria['count'] for categoria in categoria_counts}
-    
-    # Asegurarnos de que todas las categorías estén presentes, incluso si tienen 0 aspirantes
-    categorias_totales = ['Ninguna','ATD Medio Superior','ATD Superior','Instructor','Asistente','Auxiliar','Titular']
-    
-    # Agregar las categorías que no están en el resultado
-    for categoria in categorias_totales:
-        if categoria not in categoria_dict:
-            categoria_dict[categoria] = 0
-    
-    return categoria_dict
+    categoria_dict_raw = {categoria['categoria_docente']: categoria['count'] for categoria in categoria_counts}
 
+    # Lista ordenada según las categorías definidas en el sistema
+    categorias_totales = Admin_models.CATEGORIA_DOCENTE_CHOICES
 
+    # Contar los aspirantes sin categoría asignada (None o cadena vacía)
+    sin_categoria = Admin_models.Aspirante.objects.filter(
+        categoria_docente__isnull=True
+    ).count() + Admin_models.Aspirante.objects.filter(
+        categoria_docente=''
+    ).count()
+
+    # Crear el diccionario final comenzando con 'Sin categoría'
+    categoria_dict_ordenado = {'Sin categoría': sin_categoria}
+
+    # Agregar el resto en orden
+    categoria_dict_ordenado.update({
+        categoria: categoria_dict_raw.get(categoria, 0)
+        for categoria in categorias_totales
+    })
+
+    return categoria_dict_ordenado

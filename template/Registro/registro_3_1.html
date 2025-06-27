@@ -1,0 +1,271 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expeditec - Gestión de Expedientes Docentes</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/lucide-icons/dist/umd/lucide-icons.min.js" rel="stylesheet">
+    <link rel="icon" href="{% static 'img/icono.png' %}" type="image/x-icon">
+    <link rel="shortcut icon" href="{% static 'img/icono.png' %}" type="image/x-icon">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
+        
+        .bg-grid-white {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.05)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+            background-size: 20px 20px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.1);
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .delay-700 {
+            animation-delay: 700ms;
+        }
+
+        .backdrop-blur-lg {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .form-container {
+                padding: 1.5rem;
+            }
+            
+            .animated-circles {
+                display: none;
+            }
+        }
+
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-color: inherit;
+            border-radius: inherit;
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Notificación de error flotante (Django Template) -->
+    {% if Error %}
+        <div id="errorNotification" class="fixed top-4 right-4 z-50 max-w-xs w-full">
+            <div class="notification bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg flex items-start">
+                <div class="flex-shrink-0">
+                    <img src="https://api.iconify.design/lucide:alert-circle.svg?color=red" class="h-6 w-6" alt="Error" />
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium">Error</h3>
+                    <div class="mt-1 text-sm">
+                        <p id="notificationMessage">{{ Error }}</p>
+                    </div>
+                </div>
+                <button onclick="hideNotification()" class="ml-auto -mx-1.5 -my-1.5 bg-red-100 text-red-500 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-200 inline-flex h-8 w-8">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="h-5 w-5" alt="Cerrar"><path fill="none" stroke="red" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <script>
+            function hideNotification() {
+                const notification = document.getElementById('errorNotification');
+                const notificationContent = notification.querySelector('.notification');
+                notificationContent.classList.add('hide');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }
+            setTimeout(() => {
+                if (document.getElementById('errorNotification')) hideNotification();
+            }, 5000);
+        </script>
+
+        <style>
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .notification {
+                animation: slideIn 0.3s ease-out forwards;
+            }
+            .notification.hide {
+                animation: slideOut 0.3s ease-in forwards;
+            }
+        </style>
+    {% endif %}
+
+    <!-- Notificación de éxito flotante (Django Template) -->
+    {% if Success %}
+        <div id="successNotification" class="fixed top-4 right-4 z-50 max-w-xs w-full">
+            <div class="notification bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg flex items-start">
+                <div class="flex-shrink-0">
+                    <img src="https://api.iconify.design/lucide:check-circle-2.svg?color=green" class="h-6 w-6" alt="Éxito" />
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium">Éxito</h3>
+                    <div class="mt-1 text-sm">
+                        <p id="successMessage">{{ Success }}</p>
+                    </div>
+                </div>
+                <button onclick="hideSuccessNotification()" class="ml-auto -mx-1.5 -my-1.5 bg-green-50 text-green-500 rounded-lg focus:ring-2 focus:ring-green-400 p-1.5 hover:bg-green-100 inline-flex h-8 w-8">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" class="h-5 w-5" alt="Cerrar"><path fill="none" stroke="red" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <script>
+            function hideSuccessNotification() {
+                const notification = document.getElementById('successNotification');
+                const notificationContent = notification.querySelector('.notification');
+                notificationContent.classList.add('hide');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }
+            setTimeout(() => {
+                if (document.getElementById('successNotification')) hideSuccessNotification();
+            }, 5000);
+        </script>
+    {% endif %}
+
+    <div class="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 relative overflow-hidden">
+        <div class="absolute inset-0 bg-grid-white"></div>
+        <div class="animated-circles hidden sm:block">
+            <div class="absolute top-1/4 -left-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-1/4 -right-24 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+        </div>
+
+        <div class="w-full max-w-4xl z-10 mx-4 sm:mx-6 md:mx-8 my-8">
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 hover:shadow-blue-900/20">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-blue-800 to-blue-900 p-4 sm:p-6 flex flex-col items-center">
+                    <div class="flex items-center justify-center mb-4">
+                        <img src="https://api.iconify.design/lucide:book.svg?color=white" class="h-8 w-8 sm:h-10 sm:w-10 mr-2" alt="Logo" />
+                        <h1 class="text-white text-xl sm:text-2xl font-bold tracking-tight">Expeditec</h1>
+                    </div>
+                    <p class="text-blue-100 text-center text-xs sm:text-sm max-w-xs">
+                        Sistema de Gestión de Expedientes Docentes
+                    </p>
+                </div>
+                
+                <!-- Form -->
+                <div class="p-4 sm:p-6 md:p-8 bg-white rounded-b-2xl">
+                    <h2 class="text-gray-800 text-lg sm:text-xl font-bold mb-6 text-center">Seleccione su facultad</h2>
+                    
+                    <form id="registerForm" class="space-y-4 sm:space-y-6" action="{% url 'registro' %}" method="POST">
+                        {% csrf_token %}
+                        
+                        <input type="hidden" name="opc" value="3_1">
+                        <input type="hidden" name="username" value="{{request.POST.username}}">
+                        <input type="hidden" name="email" value="{{request.POST.email}}">
+                        <input type="hidden" name="password1" value="{{request.POST.password1}}">
+                        <input type="hidden" name="password2" value="{{request.POST.password2}}">
+                        <input type="hidden" name="tipo" value="{{request.POST.tipo}}">
+                        <input type="hidden" name="nombres" value="{{request.POST.nombres}}">        
+                        <input type="hidden" name="primer_apellido" value="{{request.POST.primer_apellido}}">
+                        <input type="hidden" name="segundo_apellido" value="{{request.POST.segundo_apellido}}">       
+                        <input type="hidden" name="sexo" value="{{request.POST.sexo}}">
+                        <input type="hidden" name="ci" value="{{request.POST.ci}}">
+                        <input type="hidden" name="lugar_nacimiento" value="{{request.POST.lugar_nacimiento}}">
+                        <input type="hidden" name="color_piel" value="{{request.POST.color_piel}}">     
+                        <input type="hidden" name="estado_civil" value="{{request.POST.estado_civil}}">
+                        <input type="hidden" name="ciudadano" value="{{request.POST.ciudadano}}">
+                        <input type="hidden" name="procedencia_social" value="{{request.POST.procedencia_social}}">
+                        <input type="hidden" name="pais" value="{{request.POST.pais}}">    
+                        <input type="hidden" name="salario" value="{{request.POST.salario}}">        
+                        <input type="hidden" name="direccion" value="{{request.POST.direccion}}">
+                        <input type="hidden" name="solapin" value="{{request.POST.solapin}}">
+                        <input type="hidden" name="telefono" value="{{request.POST.telefono}}">
+
+                        <div class="flex justify-center">
+                            <div class="w-full max-w-md">
+                                <!-- Facultad Select -->
+                                <div class="space-y-2">
+                                    <label for="facultad" class="text-sm font-medium text-gray-700 block">
+                                        Facultad
+                                    </label>
+                                    <select required id="facultad" name="facultad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all duration-200 outline-none text-sm">
+                                        {% for facultad in FACULTAD_CHOICES %}
+                                            <option value="{{ facultad }}">{{ facultad }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botón de envío -->
+                        <div class="pt-4">
+                            <button type="submit" class="w-full flex items-center justify-center px-4 py-3 border border-transparent rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 group text-sm sm:text-base">
+                                <span>Siguiente</span>
+                                <img src="https://api.iconify.design/lucide:chevron-right.svg?color=white" class="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" alt="Arrow" />
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="mt-6 sm:mt-8 text-center">
+                <p class="text-xs sm:text-sm text-blue-100">
+                    Universidad de las Ciencias Informáticas © <span id="year"></span> - Todos los derechos reservados
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set current year in footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Handle viewport height for mobile browsers
+        function setVH() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        setVH();
+        window.addEventListener('resize', setVH);
+    </script>
+</body>
+</html>

@@ -20,9 +20,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 urlpatterns = [
     path('', include('Login.urls')),
+    path('registro/',include('Registro.urls')),
     path('admin/',include('Administrador.urls')),
     path('aspirante/',include('Aspirante.urls')),
     path('rrhh/',include('RRHH.urls')),
+
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -1,249 +1,325 @@
 {% extends 'Admin/admin_base.html' %}
 
 {% block contenido %}
-    <div class="space-y-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Control</h1>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Bienvenido al panel de administración
-                </p>
-            </div>
-            <div class="hidden sm:flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days-icon lucide-calendar-days"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> 
-                <span id="current-date"></span>
-            </div>
+<div class="container mx-auto px-4 py-6">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div class="mb-4 md:mb-0">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Panel de Control</h1>
+            <p class="mt-2 text-lg text-gray-600 dark:text-gray-300">
+                Resumen estadístico y métricas clave
+            </p>
         </div>
+        <div class="flex items-center space-x-4 bg-white dark:bg-gray-800 rounded-lg px-4 py-3 shadow-sm border border-gray-200 dark:border-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span id="current-date" class="text-gray-700 dark:text-gray-300 font-medium"></span>
+        </div>
+    </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Personal</p>
-                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{total_personal}}</h3>
-                    </div>
-                    <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-icon lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    </div>
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5 mb-8">
+        <!-- Stat Card 1 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg hover:transform hover:-translate-y-1">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Aspirantes</p>
+                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">{{total_personal}}</h3>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Registrados en el sistema</p>
                 </div>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Cantidad de Profesores</p>
-                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{cant_profesores}}</h3>
-                    </div>
-                    <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-user-round-icon lucide-circle-user-round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Cantidad de Estudiantes</p>
-                        <h3 class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{{cant_estudiantes}}</h3>
-                    </div>
-                    <div class="rounded-full p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap-icon lucide-graduation-cap"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
-                    </div>
+                <div class="rounded-full p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6">
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full">
-                <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                    Cantidades por Categorías Docentes
-                </h3>
-                <div class="h-96 w-full">  <!-- Aumenté la altura a h-96 para mejor visualización -->
-                    <canvas id="bar-chart"></canvas>
+        <!-- Stat Card 2 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg hover:transform hover:-translate-y-1">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Profesores</p>
+                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">{{cant_profesores}}</h3>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Personal docente</p>
+                </div>
+                <div class="rounded-full p-3 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
                 </div>
             </div>
-            
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-full">
-                <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                    Distribución por Categorías Docentes
-                </h3>
-                <div class="h-96 w-full">  <!-- Aumenté la altura a h-96 para mejor visualización -->
-                    <canvas id="pie-chart"></canvas>
+        </div>
+
+        <!-- Stat Card 3 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700 transition-all hover:shadow-lg hover:transform hover:-translate-y-1">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estudiantes</p>
+                    <h3 class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">{{cant_estudiantes}}</h3>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">En formación</p>
+                </div>
+                <div class="rounded-full p-3 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                 </div>
             </div>
         </div>
     </div>
-    <script>
 
-        // Función para inicializar los gráficos
-        function initCharts() {
-            // Colores para modo claro
-            const lightColors = {
-                background: '#ffffff',
-                text: '#374151',
-                grid: '#e5e7eb',
-                bar: '#3b82f6',
-                barHover: '#2563eb',
-                pie: ['#FF0000', // Rojo intenso
-                    '#00FF00', // Verde brillante
-                    '#0000FF', // Azul puro
-                    '#FFFF00', // Amarillo
-                    '#FF00FF', // Magenta
-                    '#00FFFF', // Cian
-                    '#006F47'  // Verde militar
-                ]
-            };
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+        <!-- Bar Chart Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Cantidades por Categorías Docentes
+                </h3>
+            </div>
+            <div class="h-80 w-full">
+                <canvas id="bar-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+        <!-- Pie Chart Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Distribución por Categorías
+                </h3>
+            </div>
+            <div class="h-80 w-full">
+                <canvas id="pie-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
 
-            // Colores para modo oscuro
-            const darkColors = {
-                background: '#1f2937',
-                text: '#f3f4f6',
-                grid: '#4b5563',
-                bar: '#60a5fa',
-                barHover: '#3b82f6',
-                pie: [
-                    '#FF0000', // Rojo intenso
-                    '#00FF00', // Verde brillante
-                    '#0000FF', // Azul puro
-                    '#FFFF00', // Amarillo
-                    '#FF00FF', // Magenta
-                    '#00FFFF', // Cian
-                    '#006F47'  // Verde militar
-                ]
-            };
+<script>
+    // Función para inicializar los gráficos
+    function initCharts() {
+        // Colores para modo claro
+        const lightTheme = {
+            background: '#ffffff',
+            text: '#111827',
+            grid: '#e5e7eb',
+            bar: '#3b82f6',
+            barHover: '#2563eb',
+            pie: [
+                '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+                '#8b5cf6', '#ec4899', '#14b8a6'
+            ],
+            cardBg: '#ffffff',
+            border: '#e5e7eb',
+            textPrimary: '#111827',
+            textSecondary: '#6b7280'
+        };
 
-            // Obtener colores según el tema actual
-            function getColors() {
-                return document.documentElement.classList.contains('dark') ? darkColors : lightColors;
-            }
+        // Colores para modo oscuro
+        const darkTheme = {
+            background: '#1f2937',
+            text: '#f3f4f6',
+            grid: '#4b5563',
+            bar: '#60a5fa',
+            barHover: '#3b82f6',
+            pie: [
+                '#60a5fa', '#34d399', '#fbbf24', '#f87171', 
+                '#a78bfa', '#f472b6', '#2dd4bf'
+            ],
+            cardBg: '#1f2937',
+            border: '#374151',
+            textPrimary: '#f3f4f6',
+            textSecondary: '#9ca3af'
+        };
 
-            // Gráfico de barras - Evaluaciones mensuales
-            const barCtx = document.getElementById('bar-chart').getContext('2d');
-            const barChart = new Chart(barCtx, {
-                type: 'bar',
-                data: {
-                    labels: [
+        // Determinar el tema actual
+        function getCurrentTheme() {
+            return document.documentElement.classList.contains('dark') ? darkTheme : lightTheme;
+        }
+
+        // Gráfico de barras
+        const barCtx = document.getElementById('bar-chart').getContext('2d');
+        const barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: [
+                    {% for categoria, cantidad in cantidad_x_categoria.items %}
+                        "{{ categoria }}"{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                ],
+                datasets: [{
+                    label: 'Cantidad',
+                    data: [
                         {% for categoria, cantidad in cantidad_x_categoria.items %}
-                            "{{ categoria }}"{% if not forloop.last %}, {% endif %}
+                            {{ cantidad }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     ],
-                    datasets: [{
-                        label: 'Usuarios',
-                        data: [
-                            {% for categoria, cantidad in cantidad_x_categoria.items %}
-                                {{ cantidad }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                        ],
-                        backgroundColor: getColors().bar,
-                        hoverBackgroundColor: getColors().barHover,
-                        borderWidth: 0,
-                        borderRadius: 4
-                    }]
+                    backgroundColor: getCurrentTheme().bar,
+                    hoverBackgroundColor: getCurrentTheme().barHover,
+                    borderWidth: 0,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: getCurrentTheme().cardBg,
+                        titleColor: getCurrentTheme().textPrimary,
+                        bodyColor: getCurrentTheme().textPrimary,
+                        borderColor: getCurrentTheme().border,
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.parsed.y} personas`;
+                            }
+                        }
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
+                scales: {
+                    x: {
+                        grid: {
+                            color: getCurrentTheme().grid,
+                            drawBorder: false
                         },
-                        tooltip: {
-                            enabled: true
+                        ticks: {
+                            color: getCurrentTheme().textPrimary,
+                            font: {
+                                weight: '500'
+                            }
                         }
                     },
-                    scales: {
-                        x: {
-                            grid: {
-                                color: getColors().grid,
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: getColors().text
-                            }
+                    y: {
+                        grid: {
+                            color: getCurrentTheme().grid,
+                            drawBorder: false
                         },
-                        y: {
-                            grid: {
-                                color: getColors().grid,
-                                drawBorder: false
-                            },
-                            ticks: {
-                                color: getColors().text
-                            },
-                            beginAtZero: true
-                        }
+                        ticks: {
+                            color: getCurrentTheme().textPrimary,
+                            padding: 10
+                        },
+                        beginAtZero: true
                     }
                 }
-            });
+            }
+        });
 
-
-            const pieCtx = document.getElementById('pie-chart').getContext('2d');
-            const pieChart = new Chart(pieCtx, {
-                type: 'pie',
-                data: {
-                    labels: [
+        // Gráfico de pastel
+        const pieCtx = document.getElementById('pie-chart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: [
+                    {% for categoria, cantidad in distribucion_x_categoria.items %}
+                        "{{ categoria }}"{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
                         {% for categoria, cantidad in distribucion_x_categoria.items %}
-                            "{{ categoria }}"{% if not forloop.last %}, {% endif %}
+                            {{ cantidad }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     ],
-                    datasets: [{
-                        data: [
-                            {% for categoria, cantidad in distribucion_x_categoria.items %}
-                                {{ cantidad }}{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
-                        ],
-                        backgroundColor: [
-                            '#FF0000', // Rojo intenso
-                            '#00FF00', // Verde brillante
-                            '#0000FF', // Azul puro
-                            '#FFFF00', // Amarillo
-                            '#FF00FF', // Magenta
-                            '#00FFFF', // Cian
-                            '#006F47'  // Verde militar
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                color: getColors().text,
-                                padding: 20,
-                                usePointStyle: true,
-                                pointStyle: 'circle'
+                    backgroundColor: getCurrentTheme().pie,
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: getCurrentTheme().textPrimary,
+                            padding: 16,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: {
+                                size: 12
                             }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.label}: ${context.raw}%`;
-                                }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: getCurrentTheme().cardBg,
+                        titleColor: getCurrentTheme().textPrimary,
+                        bodyColor: getCurrentTheme().textPrimary,
+                        borderColor: getCurrentTheme().border,
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw}%`;
                             }
                         }
                     }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // Función para actualizar los temas de los gráficos
+        window.updateChartsTheme = function() {
+            const theme = getCurrentTheme();
+            
+            // Actualizar gráfico de barras
+            barChart.options.scales.x.grid.color = theme.grid;
+            barChart.options.scales.x.ticks.color = theme.textPrimary;
+            barChart.options.scales.y.grid.color = theme.grid;
+            barChart.options.scales.y.ticks.color = theme.textPrimary;
+            barChart.options.plugins.tooltip.backgroundColor = theme.cardBg;
+            barChart.options.plugins.tooltip.titleColor = theme.textPrimary;
+            barChart.options.plugins.tooltip.bodyColor = theme.textPrimary;
+            barChart.options.plugins.tooltip.borderColor = theme.border;
+            barChart.data.datasets[0].backgroundColor = theme.bar;
+            barChart.data.datasets[0].hoverBackgroundColor = theme.barHover;
+            barChart.update();
+            
+            // Actualizar gráfico de pastel
+            pieChart.options.plugins.legend.labels.color = theme.textPrimary;
+            pieChart.options.plugins.tooltip.backgroundColor = theme.cardBg;
+            pieChart.options.plugins.tooltip.titleColor = theme.textPrimary;
+            pieChart.options.plugins.tooltip.bodyColor = theme.textPrimary;
+            pieChart.options.plugins.tooltip.borderColor = theme.border;
+            pieChart.data.datasets[0].backgroundColor = theme.pie;
+            pieChart.update();
+        };
+    }
+
+    // Mostrar fecha actual
+    function updateCurrentDate() {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-ES', options);
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        initCharts();
+        updateCurrentDate();
+        
+        // Observar cambios en el tema
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'class') {
+                    window.updateChartsTheme();
                 }
             });
-            // Función para actualizar los temas de los gráficos
-            window.updateChartsTheme = function() {
-                const colors = getColors();
-                
-                // Actualizar gráfico de barras
-                barChart.options.scales.x.grid.color = colors.grid;
-                barChart.options.scales.x.ticks.color = colors.text;
-                barChart.options.scales.y.grid.color = colors.grid;
-                barChart.options.scales.y.ticks.color = colors.text;
-                barChart.data.datasets[0].backgroundColor = colors.bar;
-                barChart.data.datasets[0].hoverBackgroundColor = colors.barHover;
-                barChart.update();
-                
-                // Actualizar gráfico de pastel
-                pieChart.options.plugins.legend.labels.color = colors.text;
-                pieChart.data.datasets[0].backgroundColor = colors.pie;
-                pieChart.update();
-            };
-        } 
+        });
+        
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    });
 </script>
-{% endblock  %}
-    
+{% endblock %}

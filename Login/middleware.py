@@ -8,9 +8,14 @@ class SessionExpiredMiddleware:
 
     def __call__(self, request:HttpRequest):
         response = self.get_response(request)
-        
+        excepto = [
+            reverse('login'),
+            reverse('recuperar_clave'),
+            reverse('enviar_token'),
+            reverse('registro'),
+        ]
         # Verificar si la sesión expiró y el usuario no está autenticado
-        if not request.user.is_authenticated and not request.path in [reverse('login'),reverse('recuperar_clave'),reverse('enviar_token')]:    
+        if not request.user.is_authenticated and not request.path in excepto:    
             return redirect(reverse('login'))
         
         return response
